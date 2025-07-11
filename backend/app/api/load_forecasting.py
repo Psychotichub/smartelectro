@@ -115,6 +115,12 @@ async def train_model(
 ):
     """Train load forecasting model"""
     try:
+        print(f"Train request received:")
+        print(f"  Project ID: {request.project_id}")
+        print(f"  Model type: {request.model_type}")
+        print(f"  Use sample data: {request.use_sample_data}")
+        print(f"  User ID: {current_user.id}")
+        
         # Verify project exists and belongs to user
         project = db.query(Project).filter(
             Project.id == request.project_id,
@@ -122,17 +128,23 @@ async def train_model(
         ).first()
         
         if not project:
+            print(f"Project {request.project_id} not found for user {current_user.id}")
             raise HTTPException(status_code=404, detail="Project not found")
+        
+        print(f"Project found: {project.name}")
         
         # Generate or use sample data or uploaded data
         if request.use_sample_data:
+            print("Using sample data")
             # Generate 3 months of hourly data
             data = load_service.generate_sample_data(
                 start_date="2023-01-01",
                 end_date="2023-04-01",
                 freq="1H"
             )
+            print(f"Generated {len(data)} sample records")
         elif request.uploaded_data:
+            print("Using uploaded data")
             # Use uploaded data
             df_data = []
             for row in request.uploaded_data:
@@ -142,22 +154,29 @@ async def train_model(
                 })
             data = pd.DataFrame(df_data)
             data['timestamp'] = pd.to_datetime(data['timestamp'])
+            print(f"Using {len(data)} uploaded records")
         else:
+            print("No data provided - raising error")
             raise HTTPException(
                 status_code=400,
                 detail="Please upload data, provide uploaded_data, or set use_sample_data=True"
             )
         
         # Train model
+        print(f"Training {request.model_type} model...")
         if request.model_type == "lstm":
             try:
                 result = load_service.train_lstm_model(data, request.forecast_hours)
+                print("LSTM training completed successfully")
             except ImportError as e:
+                print(f"LSTM not available, falling back to Random Forest: {e}")
                 # TensorFlow not available, fallback to Random Forest
                 result = load_service.train_random_forest_model(data, request.forecast_hours)
                 result['model_type'] = 'random_forest'  # Override model type
+                print("Random Forest training completed (fallback)")
         elif request.model_type == "random_forest":
             result = load_service.train_random_forest_model(data, request.forecast_hours)
+            print("Random Forest training completed successfully")
         else:
             raise HTTPException(
                 status_code=400,
@@ -165,11 +184,14 @@ async def train_model(
             )
         
         # Save model
+        print("Saving model...")
         model_name = f"{request.name}_{current_user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         actual_model_type = result.get('model_type', request.model_type)
         load_service.save_model(result, model_name, actual_model_type)
+        print("Model saved successfully")
         
         # Save to database
+        print("Saving to database...")
         db_forecast = LoadForecast(
             project_id=request.project_id,
             name=request.name,
@@ -182,6 +204,7 @@ async def train_model(
         db.add(db_forecast)
         db.commit()
         db.refresh(db_forecast)
+        print("Database record created successfully")
         
         return LoadForecastResponse(
             id=db_forecast.id,

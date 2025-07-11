@@ -341,9 +341,24 @@ class LoadForecastingService:
             'load': load
         })
     
+    def _sanitize_filename(self, filename: str) -> str:
+        """Sanitize filename to be safe for all operating systems"""
+        # Remove or replace invalid characters
+        invalid_chars = ['/', '\\', ':', '*', '?', '"', '<', '>', '|', ',']
+        for char in invalid_chars:
+            filename = filename.replace(char, '_')
+        # Remove leading/trailing spaces and dots
+        filename = filename.strip(' .')
+        # Ensure filename is not empty
+        if not filename:
+            filename = 'unnamed_model'
+        return filename
+    
     def save_model(self, model_data: Dict[str, Any], model_name: str, model_type: str):
         """Save trained model"""
-        model_path = os.path.join(self.models_dir, f"{model_name}_{model_type}")
+        # Sanitize the model name for filesystem safety
+        safe_model_name = self._sanitize_filename(model_name)
+        model_path = os.path.join(self.models_dir, f"{safe_model_name}_{model_type}")
         
         if model_type == 'lstm':
             model_data['model'].save(f"{model_path}.h5")
@@ -366,7 +381,9 @@ class LoadForecastingService:
     
     def load_model(self, model_name: str, model_type: str) -> Dict[str, Any]:
         """Load trained model"""
-        model_path = os.path.join(self.models_dir, f"{model_name}_{model_type}")
+        # Sanitize the model name for filesystem safety
+        safe_model_name = self._sanitize_filename(model_name)
+        model_path = os.path.join(self.models_dir, f"{safe_model_name}_{model_type}")
         
         if model_type == 'lstm':
             model = tf.keras.models.load_model(f"{model_path}.h5")

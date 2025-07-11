@@ -177,9 +177,22 @@ const LoadForecasting: React.FC = () => {
         }));
       }, 500);
 
-      const response = await axios.post(API_ENDPOINTS.loadForecasting.train, {
+      console.log('Sending training request:', {
         project_id: selectedProject,
         name: `${selectedModel.toUpperCase()} Model - ${new Date().toLocaleString()}`,
+        model_type: selectedModel,
+        forecast_hours: forecastHorizon,
+        use_sample_data: uploadedData.length === 0,
+        uploaded_data: uploadedData.length > 0 ? uploadedData : null
+      });
+
+      // Create a Windows-safe timestamp
+      const now = new Date();
+      const timestamp = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
+      
+      const response = await axios.post(API_ENDPOINTS.loadForecasting.train, {
+        project_id: selectedProject,
+        name: `${selectedModel.toUpperCase()} Model ${timestamp}`,
         model_type: selectedModel,
         forecast_hours: forecastHorizon,
         use_sample_data: uploadedData.length === 0,
@@ -220,21 +233,59 @@ const LoadForecasting: React.FC = () => {
 
     } catch (error: any) {
       console.error('Error training model:', error);
+      
+      let errorMessage = 'Unknown error occurred';
+      
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const detail = error.response.data?.detail || error.response.data?.message || 'Server error';
+        
+        switch (status) {
+          case 400:
+            errorMessage = `Invalid request: ${detail}`;
+            break;
+          case 401:
+            errorMessage = 'Authentication failed. Please log in again.';
+            break;
+          case 403:
+            errorMessage = 'You do not have permission to perform this action.';
+            break;
+          case 404:
+            errorMessage = 'Project not found. Please select a valid project.';
+            break;
+          case 500:
+            errorMessage = `Server error: ${detail}. Please check if the backend is running.`;
+            break;
+          default:
+            errorMessage = `Error ${status}: ${detail}`;
+        }
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = 'Unable to connect to server. Please check if the backend is running on port 8000.';
+      } else {
+        // Error in setting up request
+        errorMessage = `Request error: ${error.message}`;
+      }
+      
       setTrainingProgress({
         status: 'error',
         progress: 0,
         message: 'Training failed',
-        error: error.response?.data?.detail || 'Unknown error occurred'
+        error: errorMessage
       });
       
-      // Reset progress after 3 seconds
+      // Also show error in main error area
+      setError(errorMessage);
+      
+      // Reset progress after 5 seconds
       setTimeout(() => {
         setTrainingProgress({
           status: 'idle',
           progress: 0,
           message: ''
         });
-      }, 3000);
+      }, 5000);
     }
   };
 
