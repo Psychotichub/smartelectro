@@ -1,0 +1,37 @@
+Build a full-stack AI web application named "SmartElectro AI" for electrical engineers. The app includes the following modules:
+
+1. **Load Forecasting**
+   - Use LSTM or Random Forest to predict future power consumption based on timestamped load data.
+   - Accept user-uploaded CSV data or simulate load data.
+   - Output a line chart showing forecast results.
+
+2. **Fault Detection**
+   - Classify faults in single/three-phase systems using current/voltage/time data.
+   - Train a model (e.g. Decision Tree or CNN) on labeled fault types: L-G, L-L, L-L-G, 3-Φ fault.
+   - Allow user to test fault classification with input values.
+
+3. **Cable Calculator**
+   - Rule-based or ML-regression model to suggest cable size based on:
+     - Voltage (V), Load (kW), Power Factor, Distance (m)
+   - Display recommended cable size, voltage drop, and power loss.
+
+4. **Maintenance Alerts**
+   - Predict equipment failure based on sensor readings over time (temp, voltage, etc.)
+   - Use time-series anomaly detection.
+
+5. **Dashboard**
+   - Frontend with React or Next.js or Flutter Web
+   - Show real-time simulated data on charts
+   - Include login, project creation, and export (PDF/CSV)
+
+6. **Tech Stack**
+   - Frontend: React
+   - Backend: FastAPI
+   - AI: Python (scikit-learn, TensorFlow, PyTorch)
+   - Database: MongoDB or SQLite
+
+Include:
+- Reusable components
+- Simple dataset generator for testing
+- UI for entering inputs and viewing outputs
+- Modular code with clear file structure
