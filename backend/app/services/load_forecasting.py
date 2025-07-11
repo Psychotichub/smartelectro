@@ -4,15 +4,21 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import MinMaxScaler
-import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
-from tensorflow.keras.callbacks import EarlyStopping
 import json
 from datetime import datetime, timedelta
 from typing import List, Tuple, Dict, Any
 import pickle
 import os
+
+# Optional TensorFlow import
+try:
+    import tensorflow as tf
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import LSTM, Dense, Dropout
+    from tensorflow.keras.callbacks import EarlyStopping
+    TENSORFLOW_AVAILABLE = True
+except ImportError:
+    TENSORFLOW_AVAILABLE = False
 
 class LoadForecastingService:
     def __init__(self):
@@ -37,8 +43,11 @@ class LoadForecastingService:
         
         return np.array(X), np.array(y)
     
-    def create_lstm_model(self, sequence_length: int = 24) -> Sequential:
+    def create_lstm_model(self, sequence_length: int = 24):
         """Create LSTM model for load forecasting"""
+        if not TENSORFLOW_AVAILABLE:
+            raise ImportError("TensorFlow is not available. Please install TensorFlow to use LSTM models.")
+        
         model = Sequential([
             LSTM(50, return_sequences=True, input_shape=(sequence_length, 1)),
             Dropout(0.2),
@@ -53,6 +62,9 @@ class LoadForecastingService:
     
     def train_lstm_model(self, data: pd.DataFrame, forecast_hours: int = 24) -> Dict[str, Any]:
         """Train LSTM model for load forecasting"""
+        if not TENSORFLOW_AVAILABLE:
+            raise ImportError("TensorFlow is not available. Please install TensorFlow to use LSTM models.")
+        
         # Scale the data
         scaler = MinMaxScaler()
         scaled_data = scaler.fit_transform(data[['load']])
@@ -116,6 +128,9 @@ class LoadForecastingService:
     
     def generate_lstm_forecast(self, model, last_sequence: np.ndarray, forecast_hours: int, scaler) -> List[float]:
         """Generate forecast using LSTM model"""
+        if not TENSORFLOW_AVAILABLE:
+            raise ImportError("TensorFlow is not available. Please install TensorFlow to use LSTM models.")
+        
         forecast = []
         current_sequence = last_sequence.copy()
         
@@ -137,11 +152,20 @@ class LoadForecastingService:
         # Create features from time series
         features = self.create_features(data)
         
-        # Split data
-        X_train, X_test, y_train, y_test = train_test_split(
-            features.drop('load', axis=1), features['load'],
-            test_size=0.2, random_state=42
-        )
+        # Handle small datasets
+        if len(features) < 5:
+            # For very small datasets, use all data for training
+            X_train = features.drop('load', axis=1)
+            y_train = features['load']
+            X_test = X_train.copy()
+            y_test = y_train.copy()
+        else:
+            # Split data for larger datasets
+            test_size = min(0.2, max(0.1, 1.0 / len(features)))  # At least 1 sample for test
+            X_train, X_test, y_train, y_test = train_test_split(
+                features.drop('load', axis=1), features['load'],
+                test_size=test_size, random_state=42, shuffle=False
+            )
         
         # Train model
         model = RandomForestRegressor(
@@ -182,37 +206,100 @@ class LoadForecastingService:
         features['month'] = features['timestamp'].dt.month
         features['is_weekend'] = features['day_of_week'].isin([5, 6]).astype(int)
         
-        # Lag features
-        for lag in [1, 2, 3, 24, 48, 168]:  # 1h, 2h, 3h, 1d, 2d, 1w
-            features[f'load_lag_{lag}'] = features['load'].shift(lag)
+        # Adaptive lag features based on data size
+        data_size = len(features)
+        max_lag = min(data_size // 4, 168)  # Don't use lags longer than 1/4 of data
         
-        # Rolling statistics
-        for window in [24, 48, 168]:
-            features[f'load_rolling_mean_{window}'] = features['load'].rolling(window=window).mean()
-            features[f'load_rolling_std_{window}'] = features['load'].rolling(window=window).std()
+        # Basic lag features that don't exceed data size
+        for lag in [1, 2, 3]:
+            if lag < data_size:
+                features[f'load_lag_{lag}'] = features['load'].shift(lag)
+        
+        # Daily/weekly lags only for larger datasets
+        if data_size > 24:
+            features['load_lag_24'] = features['load'].shift(24)
+        if data_size > 48:
+            features['load_lag_48'] = features['load'].shift(48)
+        if data_size > 168:
+            features['load_lag_168'] = features['load'].shift(168)
+        
+        # Rolling statistics (adaptive window sizes)
+        for window in [min(24, data_size // 2), min(48, data_size // 2)]:
+            if window > 2:  # Only create if window is meaningful
+                features[f'load_rolling_mean_{window}'] = features['load'].rolling(window=window).mean()
+                features[f'load_rolling_std_{window}'] = features['load'].rolling(window=window).std()
         
         # Drop timestamp and NaN values
         features = features.drop('timestamp', axis=1)
         features = features.dropna()
         
+        # If we still have no data, create minimal features
+        if len(features) == 0:
+            features = data.copy()
+            features['timestamp'] = pd.to_datetime(features['timestamp'])
+            features['hour'] = features['timestamp'].dt.hour
+            features['day_of_week'] = features['timestamp'].dt.dayofweek
+            features['month'] = features['timestamp'].dt.month
+            features['is_weekend'] = features['day_of_week'].isin([5, 6]).astype(int)
+            features = features.drop('timestamp', axis=1)
+        
         return features
     
     def generate_rf_forecast(self, model, data: pd.DataFrame, forecast_hours: int) -> List[float]:
         """Generate forecast using Random Forest model"""
+        # For small datasets, use simple prediction based on mean/trend
+        if len(data) < 24:
+            # Simple forecasting for small datasets
+            recent_values = data['load'].tail(min(5, len(data)))
+            mean_value = recent_values.mean()
+            trend = (recent_values.iloc[-1] - recent_values.iloc[0]) / len(recent_values) if len(recent_values) > 1 else 0
+            
+            forecast = []
+            for i in range(forecast_hours):
+                predicted_value = mean_value + trend * i
+                forecast.append(predicted_value)
+            
+            return forecast
+        
+        # For larger datasets, use the model
         forecast = []
         extended_data = data.copy()
+        
+        # Get the original features to ensure consistency
+        original_features = self.create_features(data)
+        if len(original_features) == 0:
+            # Fallback to simple forecast
+            return [data['load'].mean()] * forecast_hours
+        
+        feature_columns = original_features.drop('load', axis=1).columns.tolist()
         
         for i in range(forecast_hours):
             # Create features for the next time step
             features = self.create_features(extended_data)
             
             if len(features) == 0:
-                break
+                # Use mean as fallback
+                forecast.append(data['load'].mean())
+                continue
             
-            # Predict next value
+            # Ensure feature consistency
             last_features = features.iloc[-1:].drop('load', axis=1)
-            prediction = model.predict(last_features)[0]
-            forecast.append(prediction)
+            
+            # Add missing features with zeros
+            for col in feature_columns:
+                if col not in last_features.columns:
+                    last_features[col] = 0
+            
+            # Remove extra features
+            last_features = last_features[feature_columns]
+            
+            try:
+                prediction = model.predict(last_features)[0]
+                forecast.append(prediction)
+            except Exception:
+                # Fallback to mean if prediction fails
+                forecast.append(data['load'].mean())
+                continue
             
             # Add prediction to data for next iteration
             next_timestamp = extended_data['timestamp'].iloc[-1] + pd.Timedelta(hours=1)

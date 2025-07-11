@@ -158,7 +158,7 @@ async def generate_sample_data(
         # Convert to JSON-serializable format
         result = {
             "equipment_type": request.equipment_type,
-            "timestamps": data["timestamp"].dt.isoformat().tolist(),
+            "timestamps": data["timestamp"].dt.strftime('%Y-%m-%dT%H:%M:%S').tolist(),
             "sensor_data": {}
         }
         
@@ -225,7 +225,7 @@ async def upload_sensor_data(
         return {
             "message": "Sensor data uploaded successfully",
             "equipment_type": equipment_type,
-            "timestamps": df["timestamp"].dt.isoformat().tolist(),
+            "timestamps": df["timestamp"].dt.strftime('%Y-%m-%dT%H:%M:%S').tolist(),
             "sensor_data": sensor_data,
             "records_count": len(df),
             "available_sensors": sensor_columns,

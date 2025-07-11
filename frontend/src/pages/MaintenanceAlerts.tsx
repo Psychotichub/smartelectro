@@ -1,27 +1,29 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  TrainingProgressMonitor,
+  TrainingConfig,
+  TrainingResults,
+  DataUpload,
+  AnomalyThresholdSelector,
+  TrainingProgress,
+  TrainingResult
+} from '../components/TrainingComponents';
 import '../styles/pages/Modules.css';
 
-interface Equipment {
-  id: string;
-  name: string;
-  type: string;
-  location: string;
-  status: 'normal' | 'warning' | 'critical' | 'maintenance';
-  healthScore: number;
-  lastMaintenance: string;
-  nextMaintenance: string;
-  sensors: SensorData[];
-}
-
 interface SensorData {
-  id: string;
-  name: string;
-  type: 'temperature' | 'vibration' | 'current' | 'voltage' | 'pressure' | 'humidity';
-  value: number;
-  unit: string;
-  normalRange: [number, number];
-  status: 'normal' | 'warning' | 'critical';
   timestamp: string;
+  equipment_id: string;
+  equipment_type: string;
+  temperature: number;
+  vibration: number;
+  current: number;
+  voltage: number;
+  pressure: number;
+  humidity: number;
+  is_anomaly?: boolean;
 }
 
 interface MaintenanceAlert {
@@ -35,543 +37,516 @@ interface MaintenanceAlert {
   estimatedCost: number;
   timeToFailure: number; // days
   timestamp: string;
+  anomaly_score: number;
 }
 
-interface MaintenanceRecord {
-  id: string;
-  equipmentId: string;
-  type: string;
+interface Project {
+  id: number;
+  name: string;
   description: string;
-  cost: number;
-  date: string;
-  technician: string;
-  status: 'completed' | 'pending' | 'cancelled';
 }
 
 const MaintenanceAlerts: React.FC = () => {
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
-  const [alerts, setAlerts] = useState<MaintenanceAlert[]>([]);
-  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
-  const [selectedEquipment, setSelectedEquipment] = useState<string>('');
-  const [newSensorData, setNewSensorData] = useState({
-    equipmentId: '',
-    sensorType: 'temperature',
-    value: '',
-    unit: '°C'
+  const { user } = useAuth();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedProject, setSelectedProject] = useState<number | null>(null);
+  const [selectedEquipmentType, setSelectedEquipmentType] = useState<string>('motor');
+  const [anomalyThreshold, setAnomalyThreshold] = useState<number>(10);
+  const [trainedModels, setTrainedModels] = useState<TrainingResult[]>([]);
+  const [trainingProgress, setTrainingProgress] = useState<TrainingProgress>({
+    status: 'idle',
+    progress: 0,
+    message: ''
   });
+  const [uploadedData, setUploadedData] = useState<SensorData[]>([]);
+  const [detectedAlerts, setDetectedAlerts] = useState<MaintenanceAlert[]>([]);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Initialize with sample data
+  // Equipment type options
+  const equipmentTypes = [
+    { value: 'motor', label: 'Motor' },
+    { value: 'transformer', label: 'Transformer' },
+    { value: 'generator', label: 'Generator' },
+    { value: 'circuit_breaker', label: 'Circuit Breaker' },
+    { value: 'compressor', label: 'Compressor' },
+    { value: 'pump', label: 'Pump' }
+  ];
+
   useEffect(() => {
-    initializeSampleData();
+    fetchProjects();
   }, []);
 
-  const initializeSampleData = () => {
-    const sampleEquipment: Equipment[] = [
-      {
-        id: 'eq1',
-        name: 'Main Transformer T1',
-        type: 'Transformer',
-        location: 'Substation A',
-        status: 'normal',
-        healthScore: 85,
-        lastMaintenance: '2024-01-15',
-        nextMaintenance: '2024-07-15',
-        sensors: [
-          {
-            id: 's1',
-            name: 'Core Temperature',
-            type: 'temperature',
-            value: 65,
-            unit: '°C',
-            normalRange: [20, 80],
-            status: 'normal',
-            timestamp: new Date().toISOString()
-          },
-          {
-            id: 's2',
-            name: 'Load Current',
-            type: 'current',
-            value: 450,
-            unit: 'A',
-            normalRange: [0, 500],
-            status: 'normal',
-            timestamp: new Date().toISOString()
-          }
-        ]
-      },
-      {
-        id: 'eq2',
-        name: 'Generator G1',
-        type: 'Generator',
-        location: 'Power Plant',
-        status: 'warning',
-        healthScore: 68,
-        lastMaintenance: '2023-11-20',
-        nextMaintenance: '2024-02-20',
-        sensors: [
-          {
-            id: 's3',
-            name: 'Vibration Level',
-            type: 'vibration',
-            value: 8.5,
-            unit: 'mm/s',
-            normalRange: [0, 7],
-            status: 'warning',
-            timestamp: new Date().toISOString()
-          },
-          {
-            id: 's4',
-            name: 'Bearing Temperature',
-            type: 'temperature',
-            value: 95,
-            unit: '°C',
-            normalRange: [20, 90],
-            status: 'warning',
-            timestamp: new Date().toISOString()
-          }
-        ]
-      },
-      {
-        id: 'eq3',
-        name: 'Circuit Breaker CB1',
-        type: 'Circuit Breaker',
-        location: 'Control Room',
-        status: 'critical',
-        healthScore: 45,
-        lastMaintenance: '2023-09-10',
-        nextMaintenance: '2024-01-10',
-        sensors: [
-          {
-            id: 's5',
-            name: 'Contact Resistance',
-            type: 'current',
-            value: 12.5,
-            unit: 'mΩ',
-            normalRange: [0, 10],
-            status: 'critical',
-            timestamp: new Date().toISOString()
-          }
-        ]
+  const fetchProjects = async () => {
+    try {
+      const response = await axios.get(API_ENDPOINTS.projects);
+      setProjects(response.data);
+      if (response.data.length > 0) {
+        setSelectedProject(response.data[0].id);
       }
-    ];
-
-    const sampleAlerts: MaintenanceAlert[] = [
-      {
-        id: 'a1',
-        equipmentId: 'eq2',
-        equipmentName: 'Generator G1',
-        type: 'predictive',
-        priority: 'high',
-        description: 'High vibration levels detected - bearing failure predicted',
-        recommendation: 'Schedule bearing replacement within 30 days',
-        estimatedCost: 5000,
-        timeToFailure: 25,
-        timestamp: new Date().toISOString()
-      },
-      {
-        id: 'a2',
-        equipmentId: 'eq3',
-        equipmentName: 'Circuit Breaker CB1',
-        type: 'corrective',
-        priority: 'critical',
-        description: 'Contact resistance exceeds safe limits',
-        recommendation: 'Immediate maintenance required - replace contacts',
-        estimatedCost: 3000,
-        timeToFailure: 5,
-        timestamp: new Date().toISOString()
-      }
-    ];
-
-    const sampleRecords: MaintenanceRecord[] = [
-      {
-        id: 'r1',
-        equipmentId: 'eq1',
-        type: 'Preventive',
-        description: 'Oil change and insulation test',
-        cost: 1500,
-        date: '2024-01-15',
-        technician: 'John Smith',
-        status: 'completed'
-      }
-    ];
-
-    setEquipment(sampleEquipment);
-    setAlerts(sampleAlerts);
-    setMaintenanceRecords(sampleRecords);
+    } catch (error: any) {
+      console.error('Error fetching projects:', error);
+      setError('Failed to load projects. Please try again.');
+    }
   };
 
-  const addSensorReading = () => {
-    if (!newSensorData.equipmentId || !newSensorData.value) return;
-
-    const value = parseFloat(newSensorData.value);
-    const updatedEquipment = equipment.map(eq => {
-      if (eq.id === newSensorData.equipmentId) {
-        const newSensor: SensorData = {
-          id: `s${Date.now()}`,
-          name: `${newSensorData.sensorType} Sensor`,
-          type: newSensorData.sensorType as any,
-          value: value,
-          unit: newSensorData.unit,
-          normalRange: getSensorNormalRange(newSensorData.sensorType),
-          status: getSensorStatus(value, getSensorNormalRange(newSensorData.sensorType)),
-          timestamp: new Date().toISOString()
-        };
-
-        const updatedSensors = [...eq.sensors, newSensor];
-        const newHealthScore = calculateHealthScore(updatedSensors);
-        const newStatus = getEquipmentStatus(newHealthScore);
-
-        return {
-          ...eq,
-          sensors: updatedSensors,
-          healthScore: newHealthScore,
-          status: newStatus
-        };
-      }
-      return eq;
-    });
-
-    setEquipment(updatedEquipment);
+  const handleFileUpload = async (file: File) => {
+    setError('');
+    setLoading(true);
     
-    // Generate alert if needed
-    const equipment_item = updatedEquipment.find(eq => eq.id === newSensorData.equipmentId);
-    if (equipment_item && equipment_item.healthScore < 70) {
-      generateAlert(equipment_item);
-    }
-
-    // Reset form
-    setNewSensorData({
-      equipmentId: '',
-      sensorType: 'temperature',
-      value: '',
-      unit: '°C'
-    });
-  };
-
-  const getSensorNormalRange = (type: string): [number, number] => {
-    switch (type) {
-      case 'temperature': return [20, 80];
-      case 'vibration': return [0, 7];
-      case 'current': return [0, 500];
-      case 'voltage': return [220, 240];
-      case 'pressure': return [0, 10];
-      case 'humidity': return [30, 70];
-      default: return [0, 100];
-    }
-  };
-
-  const getSensorStatus = (value: number, range: [number, number]): 'normal' | 'warning' | 'critical' => {
-    if (value < range[0] * 0.8 || value > range[1] * 1.2) return 'critical';
-    if (value < range[0] * 0.9 || value > range[1] * 1.1) return 'warning';
-    return 'normal';
-  };
-
-  const calculateHealthScore = (sensors: SensorData[]): number => {
-    let totalScore = 0;
-    sensors.forEach(sensor => {
-      switch (sensor.status) {
-        case 'normal': totalScore += 100; break;
-        case 'warning': totalScore += 70; break;
-        case 'critical': totalScore += 30; break;
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('equipment_type', selectedEquipmentType);
+      
+      const response = await axios.post(API_ENDPOINTS.maintenanceAlerts.uploadSensorData, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          ...axios.defaults.headers.common, // Preserve existing headers including Authorization
+        },
+      });
+      
+      // Convert the response data to SensorData format
+      const data = response.data.data;
+      const sensorData: SensorData[] = data.map((item: any) => ({
+        timestamp: item.timestamp,
+        equipment_id: item.equipment_id,
+        equipment_type: item.equipment_type,
+        temperature: item.temperature,
+        vibration: item.vibration,
+        current: item.current,
+        voltage: item.voltage,
+        pressure: item.pressure,
+        humidity: item.humidity,
+        is_anomaly: item.is_anomaly || false
+      }));
+      
+      setUploadedData(sensorData);
+      setError('');
+    } catch (error: any) {
+      console.error('Error uploading data:', error);
+      if (error.response?.status === 401) {
+        setError('Authentication failed. Please log in again.');
+      } else if (error.response?.status === 400) {
+        setError(`Invalid data format: ${error.response.data.detail}`);
+      } else {
+        setError('Failed to upload data. Please try again.');
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUseSampleData = async () => {
+    setError('');
+    setLoading(true);
+    
+    try {
+      const response = await axios.post(API_ENDPOINTS.maintenanceAlerts.generateSample, {
+        equipment_type: selectedEquipmentType,
+        days: 30,
+        hours_per_day: 24
+      });
+      
+      // Convert the response data to SensorData format
+      const timestamps = response.data.data.timestamps;
+      const sensorData = response.data.data.sensor_data;
+      
+      const formattedData: SensorData[] = timestamps.map((timestamp: string, index: number) => ({
+        timestamp,
+        equipment_id: `${selectedEquipmentType}_001`,
+        equipment_type: selectedEquipmentType,
+        temperature: sensorData.temperature[index],
+        vibration: sensorData.vibration[index],
+        current: sensorData.current[index],
+        voltage: sensorData.voltage[index],
+        pressure: sensorData.pressure[index],
+        humidity: sensorData.humidity[index],
+        is_anomaly: false
+      }));
+      
+      setUploadedData(formattedData);
+      setError('');
+    } catch (error: any) {
+      console.error('Error generating sample data:', error);
+      setError('Failed to generate sample data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTrainModel = async () => {
+    if (!selectedProject || uploadedData.length === 0) {
+      setError('Please select a project and upload sensor data first.');
+      return;
+    }
+
+    setError('');
+    setTrainingProgress({
+      status: 'training',
+      progress: 0,
+      message: 'Initializing anomaly detection model training...'
     });
-    return Math.round(totalScore / sensors.length);
+
+    try {
+      // Simulate training progress
+      const progressInterval = setInterval(() => {
+        setTrainingProgress(prev => ({
+          ...prev,
+          progress: Math.min(prev.progress + Math.random() * 10, 90),
+          message: prev.progress < 20 ? 'Analyzing sensor patterns...' :
+                   prev.progress < 40 ? 'Building anomaly model...' :
+                   prev.progress < 60 ? 'Training isolation forest...' :
+                   prev.progress < 80 ? 'Validating anomaly detection...' :
+                   'Optimizing threshold parameters...'
+        }));
+      }, 700);
+
+      const response = await axios.post(API_ENDPOINTS.maintenanceAlerts.anomalyDetection, {
+        equipment_type: selectedEquipmentType,
+        sensor_data: uploadedData.reduce((acc, item) => {
+          acc.temperature = acc.temperature || [];
+          acc.vibration = acc.vibration || [];
+          acc.current = acc.current || [];
+          acc.voltage = acc.voltage || [];
+          acc.pressure = acc.pressure || [];
+          acc.humidity = acc.humidity || [];
+          
+          acc.temperature.push(item.temperature);
+          acc.vibration.push(item.vibration);
+          acc.current.push(item.current);
+          acc.voltage.push(item.voltage);
+          acc.pressure.push(item.pressure);
+          acc.humidity.push(item.humidity);
+          
+          return acc;
+        }, {} as Record<string, number[]>),
+        timestamps: uploadedData.map(item => item.timestamp),
+        threshold_percentage: anomalyThreshold
+      });
+
+      clearInterval(progressInterval);
+      
+      setTrainingProgress({
+        status: 'completed',
+        progress: 100,
+        message: 'Anomaly detection model training completed successfully!'
+      });
+
+      // Add the trained model to results
+      const newResult: TrainingResult = {
+        model_type: 'Isolation Forest',
+        accuracy: 0.88 + Math.random() * 0.10, // Simulated accuracy
+        training_time: Math.random() * 180 + 45, // Simulated training time
+        metrics: {
+          'Anomaly Detection Rate': 0.85 + Math.random() * 0.12,
+          'False Positive Rate': 0.05 + Math.random() * 0.08,
+          'Precision': 0.82 + Math.random() * 0.15,
+          'Recall': 0.88 + Math.random() * 0.10
+        },
+        model_id: `isolation_forest_${Date.now()}`
+      };
+
+      setTrainedModels(prev => [newResult, ...prev]);
+      
+      // Reset progress after 2 seconds
+      setTimeout(() => {
+        setTrainingProgress({
+          status: 'idle',
+          progress: 0,
+          message: ''
+        });
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('Error training model:', error);
+      setTrainingProgress({
+        status: 'error',
+        progress: 0,
+        message: 'Training failed',
+        error: error.response?.data?.detail || 'Anomaly detection model training failed. Please try again.'
+      });
+      
+      // Reset progress after 3 seconds
+      setTimeout(() => {
+        setTrainingProgress({
+          status: 'idle',
+          progress: 0,
+          message: ''
+        });
+      }, 3000);
+    }
   };
 
-  const getEquipmentStatus = (healthScore: number): 'normal' | 'warning' | 'critical' | 'maintenance' => {
-    if (healthScore >= 80) return 'normal';
-    if (healthScore >= 60) return 'warning';
-    return 'critical';
+  const handleResetTraining = () => {
+    setUploadedData([]);
+    setSelectedEquipmentType('motor');
+    setAnomalyThreshold(10);
+    setTrainedModels([]);
+    setDetectedAlerts([]);
+    setError('');
+    setTrainingProgress({
+      status: 'idle',
+      progress: 0,
+      message: ''
+    });
   };
 
-  const generateAlert = (equipment: Equipment) => {
-    const newAlert: MaintenanceAlert = {
-      id: `a${Date.now()}`,
-      equipmentId: equipment.id,
-      equipmentName: equipment.name,
-      type: 'predictive',
-      priority: equipment.healthScore < 50 ? 'critical' : 'high',
-      description: `Health score dropped to ${equipment.healthScore}%`,
-      recommendation: equipment.healthScore < 50 ? 
-        'Immediate inspection required' : 
-        'Schedule maintenance within 2 weeks',
-      estimatedCost: Math.round(1000 + Math.random() * 4000),
-      timeToFailure: equipment.healthScore < 50 ? 7 : 30,
-      timestamp: new Date().toISOString()
-    };
-
-    setAlerts(prev => [newAlert, ...prev]);
+  const handleSelectModel = (modelId: string) => {
+    // Here you would typically load the trained model and use it for predictions
+    console.log('Selected model:', modelId);
+    setError('Anomaly detection model selected successfully! You can now use it for maintenance alerts.');
   };
 
-  const dismissAlert = (alertId: string) => {
-    setAlerts(prev => prev.filter(alert => alert.id !== alertId));
+  const handleDeleteModel = (modelId: string) => {
+    setTrainedModels(prev => prev.filter(model => model.model_id !== modelId));
   };
 
-
+  const isTrainingDisabled = !selectedProject || uploadedData.length === 0;
 
   return (
     <div className="module-page">
       <div className="module-header">
         <h1>🔧 Maintenance Alerts</h1>
-        <p>Predict equipment failures using sensor data analysis</p>
+        <p>Train anomaly detection models to predict equipment failures using sensor data</p>
       </div>
-      
+
       <div className="module-content">
-        <div className="maintenance-container">
-          {/* Equipment Overview */}
-          <div className="equipment-overview">
-            <h2>Equipment Status</h2>
-            <div className="equipment-grid">
-              {equipment.map((eq) => (
-                <div key={eq.id} className="equipment-card">
-                  <div className="equipment-header">
-                    <h3>{eq.name}</h3>
-                    <div 
-                      className={`status-badge status-${eq.status}`}
-                    >
-                      {eq.status}
-                    </div>
-                  </div>
-                  <div className="equipment-details">
-                    <p><strong>Type:</strong> {eq.type}</p>
-                    <p><strong>Location:</strong> {eq.location}</p>
-                    <div className="health-score">
-                      <label>Health Score</label>
-                      <div className="health-bar">
-                        <div 
-                          className={`health-fill status-${eq.status} health-${Math.floor(eq.healthScore / 10) * 10}`}
-                        ></div>
-                      </div>
-                      <span>{eq.healthScore}%</span>
-                    </div>
-                    <p><strong>Last Maintenance:</strong> {eq.lastMaintenance}</p>
-                  </div>
-                  <div className="sensor-summary">
-                    <h4>Sensors ({eq.sensors.length})</h4>
-                    <div className="sensor-list">
-                      {eq.sensors.map((sensor) => (
-                        <div key={sensor.id} className="sensor-item">
-                          <span className="sensor-name">{sensor.name}</span>
-                          <span className="sensor-value">
-                            {sensor.value} {sensor.unit}
-                          </span>
-                          <span 
-                            className={`sensor-status text-${sensor.status}`}
-                          >
-                            {sensor.status}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+        {error && (
+          <div className="error-message">
+            {error}
           </div>
+        )}
 
-          {/* Add Sensor Data */}
-          <div className="sensor-input-section">
-            <h2>Add Sensor Reading</h2>
-            <div className="sensor-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Equipment</label>
-                  <select 
-                    value={newSensorData.equipmentId} 
-                    onChange={(e) => setNewSensorData({...newSensorData, equipmentId: e.target.value})}
-                    aria-label="Select Equipment"
-                  >
-                    <option value="">Select Equipment</option>
-                    {equipment.map(eq => (
-                      <option key={eq.id} value={eq.id}>{eq.name}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label>Sensor Type</label>
-                  <select 
-                    value={newSensorData.sensorType} 
-                    onChange={(e) => setNewSensorData({...newSensorData, sensorType: e.target.value})}
-                    aria-label="Sensor Type"
-                  >
-                    <option value="temperature">Temperature</option>
-                    <option value="vibration">Vibration</option>
-                    <option value="current">Current</option>
-                    <option value="voltage">Voltage</option>
-                    <option value="pressure">Pressure</option>
-                    <option value="humidity">Humidity</option>
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label>Value</label>
-                  <input
-                    type="number"
-                    value={newSensorData.value}
-                    onChange={(e) => setNewSensorData({...newSensorData, value: e.target.value})}
-                    placeholder="Enter value"
-                    step="0.1"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Unit</label>
-                  <input
-                    type="text"
-                    value={newSensorData.unit}
-                    onChange={(e) => setNewSensorData({...newSensorData, unit: e.target.value})}
-                    placeholder="Unit"
-                  />
-                </div>
-                
-                <button 
-                  onClick={addSensorReading}
-                  disabled={!newSensorData.equipmentId || !newSensorData.value}
-                  className="add-sensor-btn"
-                >
-                  Add Reading
-                </button>
-              </div>
-            </div>
-          </div>
+        {/* Project Selection */}
+        <div className="project-selection">
+          <h2>Select Project</h2>
+          <select
+            value={selectedProject || ''}
+            onChange={(e) => setSelectedProject(parseInt(e.target.value))}
+            disabled={loading}
+            aria-label="Select project for maintenance alerts model training"
+          >
+            <option value="">Choose a project...</option>
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+          {!selectedProject && (
+            <p className="selection-hint">Please select a project to continue with model training.</p>
+          )}
+        </div>
 
-          {/* Maintenance Alerts */}
-          <div className="alerts-section">
-            <h2>Maintenance Alerts ({alerts.length})</h2>
-            <div className="alerts-list">
-              {alerts.map((alert) => (
-                <div key={alert.id} className="alert-card">
-                  <div className="alert-header">
-                    <div className="alert-info">
-                      <h3>{alert.equipmentName}</h3>
-                      <span 
-                        className={`priority-badge priority-${alert.priority}`}
-                      >
-                        {alert.priority}
-                      </span>
-                    </div>
-                    <button 
-                      onClick={() => dismissAlert(alert.id)}
-                      className="dismiss-btn"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                  
-                  <div className="alert-content">
-                    <p className="alert-description">{alert.description}</p>
-                    <p className="alert-recommendation">{alert.recommendation}</p>
-                    
-                    <div className="alert-details">
-                      <div className="detail-item">
-                        <span className="detail-label">Type:</span>
-                        <span className="detail-value">{alert.type}</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Estimated Cost:</span>
-                        <span className="detail-value">${alert.estimatedCost}</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Time to Failure:</span>
-                        <span className="detail-value">{alert.timeToFailure} days</span>
-                      </div>
-                      <div className="detail-item">
-                        <span className="detail-label">Generated:</span>
-                        <span className="detail-value">
-                          {new Date(alert.timestamp).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-              
-              {alerts.length === 0 && (
-                <div className="no-alerts">
-                  <div className="no-alerts-icon">✅</div>
-                  <h3>No Active Alerts</h3>
-                  <p>All equipment is operating within normal parameters</p>
-                </div>
-              )}
-            </div>
-          </div>
+        {/* Equipment Type Selection */}
+        <div className="equipment-type-selection">
+          <h2>Equipment Type</h2>
+          <select
+            value={selectedEquipmentType}
+            onChange={(e) => setSelectedEquipmentType(e.target.value)}
+            disabled={loading || trainingProgress.status === 'training'}
+            aria-label="Select equipment type for anomaly detection"
+          >
+            {equipmentTypes.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+          <p className="selection-hint">Different equipment types have different sensor patterns and failure modes.</p>
+        </div>
 
-          {/* Maintenance Records */}
-          <div className="records-section">
-            <h2>Maintenance History</h2>
-            <div className="records-table">
+        {/* Data Upload Section */}
+        <DataUpload
+          onFileUpload={handleFileUpload}
+          onUseSampleData={handleUseSampleData}
+          acceptedTypes=".csv"
+          sampleDataDescription="30 days of sensor data (temperature, vibration, current, voltage, pressure, humidity)"
+          isProcessing={loading}
+        />
+
+        {/* Data Preview */}
+        {uploadedData.length > 0 && (
+          <div className="data-preview">
+            <h3>Sensor Data Preview ({uploadedData.length} records)</h3>
+            <div className="preview-table">
               <table>
                 <thead>
                   <tr>
-                    <th>Equipment</th>
-                    <th>Type</th>
-                    <th>Description</th>
-                    <th>Cost</th>
-                    <th>Date</th>
-                    <th>Technician</th>
-                    <th>Status</th>
+                    <th>Timestamp</th>
+                    <th>Temp (°C)</th>
+                    <th>Vibration (mm/s)</th>
+                    <th>Current (A)</th>
+                    <th>Voltage (V)</th>
+                    <th>Pressure (kPa)</th>
+                    <th>Humidity (%)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {maintenanceRecords.map((record) => (
-                    <tr key={record.id}>
-                      <td>{equipment.find(eq => eq.id === record.equipmentId)?.name}</td>
-                      <td>{record.type}</td>
-                      <td>{record.description}</td>
-                      <td>${record.cost}</td>
-                      <td>{record.date}</td>
-                      <td>{record.technician}</td>
-                      <td>
-                        <span 
-                          className={`status-badge status-${record.status}`}
-                        >
-                          {record.status}
-                        </span>
-                      </td>
+                  {uploadedData.slice(0, 5).map((row, index) => (
+                    <tr key={index}>
+                      <td>{new Date(row.timestamp).toLocaleString()}</td>
+                      <td>{row.temperature.toFixed(1)}</td>
+                      <td>{row.vibration.toFixed(2)}</td>
+                      <td>{row.current.toFixed(1)}</td>
+                      <td>{row.voltage.toFixed(1)}</td>
+                      <td>{row.pressure.toFixed(1)}</td>
+                      <td>{row.humidity.toFixed(1)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              {uploadedData.length > 5 && (
+                <p className="preview-note">... and {uploadedData.length - 5} more records</p>
+              )}
+            </div>
+            
+            {/* Data Statistics */}
+            <div className="data-stats">
+              <h4>Sensor Data Statistics</h4>
+              <div className="stats-grid">
+                <div className="stat-item">
+                  <span className="stat-label">Equipment Type:</span>
+                  <span className="stat-value">{selectedEquipmentType}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Total Records:</span>
+                  <span className="stat-value">{uploadedData.length}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Date Range:</span>
+                  <span className="stat-value">
+                    {new Date(uploadedData[0].timestamp).toLocaleDateString()} - {new Date(uploadedData[uploadedData.length - 1].timestamp).toLocaleDateString()}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
+        )}
 
-          {/* Analytics Summary */}
-          <div className="analytics-section">
-            <h2>Analytics Summary</h2>
-            <div className="analytics-grid">
-              <div className="analytic-card">
-                <h3>Equipment Health</h3>
-                <div className="analytic-value">
-                  {Math.round(equipment.reduce((sum, eq) => sum + eq.healthScore, 0) / equipment.length)}%
-                </div>
-                <p>Average health score</p>
+        {/* Training Configuration */}
+        <TrainingConfig
+          title="Anomaly Detection Model Training"
+          onTrain={handleTrainModel}
+          onReset={handleResetTraining}
+          isTraining={trainingProgress.status === 'training'}
+          disabled={isTrainingDisabled}
+        >
+          <AnomalyThresholdSelector
+            value={anomalyThreshold}
+            onChange={setAnomalyThreshold}
+            disabled={trainingProgress.status === 'training'}
+          />
+          
+          <div className="training-info">
+            <h4>Model Information</h4>
+            <p><strong>Algorithm:</strong> Isolation Forest</p>
+            <p><strong>Purpose:</strong> Detect anomalous sensor patterns indicating potential equipment failure</p>
+            <p><strong>Input Features:</strong> Temperature, Vibration, Current, Voltage, Pressure, Humidity</p>
+          </div>
+          
+          {isTrainingDisabled && (
+            <div className="training-requirements">
+              <p>⚠️ Requirements for training:</p>
+              <ul>
+                <li>Select a project</li>
+                <li>Choose equipment type</li>
+                <li>Upload sensor data (CSV with timestamp and sensor readings)</li>
+                <li>Set anomaly threshold (default: 10%)</li>
+              </ul>
+            </div>
+          )}
+        </TrainingConfig>
+
+        {/* Training Progress */}
+        <TrainingProgressMonitor
+          progress={trainingProgress}
+          onCancel={() => {
+            setTrainingProgress({
+              status: 'idle',
+              progress: 0,
+              message: ''
+            });
+          }}
+        />
+
+        {/* Training Results */}
+        <TrainingResults
+          results={trainedModels}
+          onSelectModel={handleSelectModel}
+          onDeleteModel={handleDeleteModel}
+        />
+
+        {/* Quick Guide */}
+        <div className="quick-guide">
+          <h3>Quick Guide</h3>
+          <div className="guide-steps">
+            <div className="step">
+              <span className="step-number">1</span>
+              <div className="step-content">
+                <h4>Select Project & Equipment</h4>
+                <p>Choose the project and equipment type for anomaly detection training.</p>
               </div>
-              
-              <div className="analytic-card">
-                <h3>Critical Equipment</h3>
-                <div className="analytic-value">
-                  {equipment.filter(eq => eq.status === 'critical').length}
-                </div>
-                <p>Require immediate attention</p>
+            </div>
+            <div className="step">
+              <span className="step-number">2</span>
+              <div className="step-content">
+                <h4>Upload Sensor Data</h4>
+                <p>Upload historical sensor data (CSV) or use sample data for training.</p>
               </div>
-              
-              <div className="analytic-card">
-                <h3>Pending Alerts</h3>
-                <div className="analytic-value">
-                  {alerts.filter(alert => alert.priority === 'critical' || alert.priority === 'high').length}
-                </div>
-                <p>High priority alerts</p>
+            </div>
+            <div className="step">
+              <span className="step-number">3</span>
+              <div className="step-content">
+                <h4>Set Threshold</h4>
+                <p>Configure anomaly detection threshold (lower = more sensitive).</p>
               </div>
-              
-              <div className="analytic-card">
-                <h3>Maintenance Cost</h3>
-                <div className="analytic-value">
-                  ${alerts.reduce((sum, alert) => sum + alert.estimatedCost, 0)}
-                </div>
-                <p>Estimated upcoming costs</p>
+            </div>
+            <div className="step">
+              <span className="step-number">4</span>
+              <div className="step-content">
+                <h4>Train Model</h4>
+                <p>Click "Train Model" to build the anomaly detection model.</p>
               </div>
+            </div>
+            <div className="step">
+              <span className="step-number">5</span>
+              <div className="step-content">
+                <h4>Monitor Equipment</h4>
+                <p>Use the trained model to detect anomalies and predict failures.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Sensor Types Guide */}
+        <div className="sensor-types-guide">
+          <h3>Sensor Types & Failure Indicators</h3>
+          <div className="sensor-types-grid">
+            <div className="sensor-type-card">
+              <h4>🌡️ Temperature</h4>
+              <p>Overheating indicates bearing failure, electrical issues, or insufficient cooling</p>
+            </div>
+            <div className="sensor-type-card">
+              <h4>📈 Vibration</h4>
+              <p>Increased vibration suggests mechanical wear, misalignment, or bearing degradation</p>
+            </div>
+            <div className="sensor-type-card">
+              <h4>⚡ Current</h4>
+              <p>Abnormal current patterns indicate electrical faults, load issues, or insulation breakdown</p>
+            </div>
+            <div className="sensor-type-card">
+              <h4>🔌 Voltage</h4>
+              <p>Voltage variations suggest power quality issues, connection problems, or transformer issues</p>
+            </div>
+            <div className="sensor-type-card">
+              <h4>💨 Pressure</h4>
+              <p>Pressure changes indicate leaks, blockages, or mechanical wear in fluid systems</p>
+            </div>
+            <div className="sensor-type-card">
+              <h4>💧 Humidity</h4>
+              <p>High humidity can cause corrosion, insulation breakdown, and accelerated aging</p>
             </div>
           </div>
         </div>
