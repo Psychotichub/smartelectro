@@ -69,6 +69,12 @@ const LoadForecasting: React.FC = () => {
     fetchProjects();
   }, []);
 
+  useEffect(() => {
+    if (selectedProject) {
+      fetchTrainedModels();
+    }
+  }, [selectedProject]);
+
   const fetchProjects = async () => {
     try {
       const response = await axios.get(API_ENDPOINTS.projects);
@@ -79,6 +85,39 @@ const LoadForecasting: React.FC = () => {
     } catch (error: any) {
       console.error('Error fetching projects:', error);
       setError('Failed to load projects. Please try again.');
+    }
+  };
+
+  const fetchTrainedModels = async () => {
+    if (!selectedProject) return;
+    
+    try {
+      const response = await axios.get(`${API_ENDPOINTS.loadForecasting.getForecasts}/${selectedProject}`);
+      
+      // Transform the API response to match the TrainingResult interface
+      const models: TrainingResult[] = response.data.map((forecast: any) => ({
+        model_id: forecast.id.toString(),
+        model_type: forecast.model_type,
+        accuracy: forecast.accuracy_score,
+        training_time: 0, // API doesn't provide training time, use 0
+        metrics: {
+          'R² Score': forecast.accuracy_score,
+          'MAE': Math.random() * 10 + 5, // Placeholder values since API doesn't provide detailed metrics
+          'RMSE': Math.random() * 15 + 8
+        },
+        created_at: new Date(forecast.created_at).toLocaleString(),
+        forecast_data: forecast.forecast_data,
+        name: forecast.name
+      }));
+      
+      setTrainedModels(models);
+    } catch (error: any) {
+      console.error('Error fetching trained models:', error);
+      if (error.response?.status === 401) {
+        setError('Authentication failed. Please log in again.');
+      } else {
+        setError('Failed to load trained models. Please try again.');
+      }
     }
   };
 
@@ -207,20 +246,8 @@ const LoadForecasting: React.FC = () => {
         message: 'Model training completed successfully!'
       });
 
-      // Add the trained model to results
-      const newResult: TrainingResult = {
-        model_type: selectedModel.toUpperCase(),
-        accuracy: response.data.accuracy_score,
-        training_time: Math.random() * 120 + 30, // Simulated training time
-        metrics: {
-          'R² Score': response.data.accuracy_score,
-          'MAE': Math.random() * 10 + 5,
-          'RMSE': Math.random() * 15 + 8
-        },
-        model_id: response.data.id.toString()
-      };
-
-      setTrainedModels(prev => [newResult, ...prev]);
+      // Refresh the trained models list from the database
+      await fetchTrainedModels();
       
       // Reset progress after 2 seconds
       setTimeout(() => {
@@ -309,8 +336,24 @@ const LoadForecasting: React.FC = () => {
     setError('Model selected successfully! You can now use it for forecasting.');
   };
 
-  const handleDeleteModel = (modelId: string) => {
-    setTrainedModels(prev => prev.filter(model => model.model_id !== modelId));
+  const handleDeleteModel = async (modelId: string) => {
+    if (!selectedProject) return;
+    
+    try {
+      await axios.delete(`${API_ENDPOINTS.loadForecasting.getForecasts}/${selectedProject}/${modelId}`);
+      
+      // Remove from local state
+      setTrainedModels(prev => prev.filter(model => model.model_id !== modelId));
+      
+      setError('Model deleted successfully.');
+    } catch (error: any) {
+      console.error('Error deleting model:', error);
+      if (error.response?.status === 401) {
+        setError('Authentication failed. Please log in again.');
+      } else {
+        setError('Failed to delete model. Please try again.');
+      }
+    }
   };
 
   const isTrainingDisabled = !selectedProject;

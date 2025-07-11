@@ -35,7 +35,23 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     if (token) {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setIsAuthenticated(true);
-      // You could verify the token here by calling an API endpoint
+      
+      // Fetch user data to ensure we have complete user information
+      const fetchUser = async () => {
+        try {
+          const userResponse = await axios.get(API_ENDPOINTS.auth.me);
+          setUser(userResponse.data);
+        } catch (error) {
+          console.error('Failed to fetch user data:', error);
+          // Token might be invalid, clear it
+          localStorage.removeItem('token');
+          delete axios.defaults.headers.common['Authorization'];
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      };
+      
+      fetchUser();
     }
   }, []);
 
