@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import '../styles/pages/Projects.css';
 
 interface Project {
@@ -26,7 +27,7 @@ const Projects: React.FC = () => {
 
   const fetchProjects = async () => {
     try {
-      const response = await axios.get('http://localhost:8000/api/projects/');
+      const response = await axios.get(API_ENDPOINTS.projects);
       setProjects(response.data);
     } catch (error: any) {
       console.error('Error fetching projects:', error);
@@ -49,7 +50,7 @@ const Projects: React.FC = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:8000/api/projects/', newProject);
+      const response = await axios.post(API_ENDPOINTS.projects, newProject);
       setProjects([...projects, response.data]);
       setNewProject({ name: '', description: '' });
       setShowCreateForm(false);
@@ -73,7 +74,7 @@ const Projects: React.FC = () => {
     }
 
     try {
-      await axios.delete(`http://localhost:8000/api/projects/${projectId}`);
+      await axios.delete(`${API_ENDPOINTS.projects}${projectId}`);
       setProjects(projects.filter(p => p.id !== projectId));
     } catch (error: any) {
       console.error('Error deleting project:', error);
@@ -89,120 +90,122 @@ const Projects: React.FC = () => {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setNewProject(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   if (loading) {
     return (
-      <div className="projects-loading">
+      <div className="projects-page">
         <div className="loading-spinner"></div>
-        <p>Loading projects...</p>
       </div>
     );
   }
 
   return (
-    <div className="projects">
+    <div className="projects-page">
       <div className="projects-header">
-        <h1>Projects</h1>
+        <h1>📁 Projects</h1>
         <p>Manage your electrical engineering projects</p>
         <button 
-          className="create-button"
-          onClick={() => setShowCreateForm(true)}
+          className="create-project-btn"
+          onClick={() => setShowCreateForm(!showCreateForm)}
         >
-          + Create New Project
+          {showCreateForm ? 'Cancel' : '+ Create New Project'}
         </button>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
-
-      {showCreateForm && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h2>Create New Project</h2>
-              <button 
-                className="close-button"
-                onClick={() => setShowCreateForm(false)}
-              >
-                ×
-              </button>
-            </div>
-            <form onSubmit={handleCreateProject} className="project-form">
-              <div className="form-group">
-                <label htmlFor="name">Project Name</label>
-                <input
-                  type="text"
-                  id="name"
-                  value={newProject.name}
-                  onChange={(e) => setNewProject({ ...newProject, name: e.target.value })}
-                  required
-                  placeholder="Enter project name"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="description">Description</label>
-                <textarea
-                  id="description"
-                  value={newProject.description}
-                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                  placeholder="Enter project description"
-                  rows={4}
-                />
-              </div>
-              <div className="form-actions">
-                <button type="button" onClick={() => setShowCreateForm(false)} className="cancel-button">
-                  Cancel
-                </button>
-                <button type="submit" className="submit-button">
-                  Create Project
-                </button>
-              </div>
-            </form>
-          </div>
+      {error && (
+        <div className="error-message">
+          {error}
         </div>
       )}
 
-      <div className="projects-grid">
-        {projects.length === 0 ? (
-          <div className="no-projects">
-            <div className="no-projects-icon">📁</div>
-            <h3>No projects yet</h3>
-            <p>Create your first project to get started with SmartElectro AI</p>
-            <button 
-              className="create-button"
-              onClick={() => setShowCreateForm(true)}
-            >
-              Create Your First Project
-            </button>
-          </div>
-        ) : (
-          projects.map((project) => (
-            <div key={project.id} className="project-card">
-              <div className="project-header">
-                <h3>{project.name}</h3>
-                <button 
-                  className="delete-button"
-                  onClick={() => handleDeleteProject(project.id)}
-                >
-                  🗑️
-                </button>
-              </div>
-              <p className="project-description">{project.description}</p>
-              <div className="project-meta">
-                <span className="project-date">
-                  Created: {new Date(project.created_at).toLocaleDateString()}
-                </span>
-                <span className="project-date">
-                  Updated: {new Date(project.updated_at).toLocaleDateString()}
-                </span>
-              </div>
-              <div className="project-actions">
-                <button className="action-btn">📊 Load Forecasting</button>
-                <button className="action-btn">⚠️ Fault Detection</button>
-                <button className="action-btn">🔌 Cable Calculator</button>
-                <button className="action-btn">🔧 Maintenance</button>
-              </div>
+      {showCreateForm && (
+        <div className="create-project-form">
+          <h2>Create New Project</h2>
+          <form onSubmit={handleCreateProject}>
+            <div className="form-group">
+              <label>Project Name</label>
+              <input
+                type="text"
+                name="name"
+                value={newProject.name}
+                onChange={handleInputChange}
+                placeholder="Enter project name"
+                required
+              />
             </div>
-          ))
-        )}
+            <div className="form-group">
+              <label>Description</label>
+              <textarea
+                name="description"
+                value={newProject.description}
+                onChange={handleInputChange}
+                placeholder="Enter project description"
+                rows={4}
+                required
+              />
+            </div>
+            <div className="form-actions">
+              <button type="submit" className="submit-btn">Create Project</button>
+              <button type="button" className="cancel-btn" onClick={() => setShowCreateForm(false)}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="projects-section">
+        <div className="projects-grid">
+          {projects.length === 0 ? (
+            <div className="no-projects">
+              <div className="no-projects-icon">📁</div>
+              <h3>No projects yet</h3>
+              <p>Create your first project to get started with SmartElectro AI</p>
+              <button 
+                className="create-button"
+                onClick={() => setShowCreateForm(true)}
+              >
+                Create Your First Project
+              </button>
+            </div>
+          ) : (
+            projects.map((project) => (
+              <div key={project.id} className="project-card">
+                <div className="project-header">
+                  <h3>{project.name}</h3>
+                  <button 
+                    className="delete-button"
+                    onClick={() => handleDeleteProject(project.id)}
+                  >
+                    🗑️
+                  </button>
+                </div>
+                <p className="project-description">{project.description}</p>
+                <div className="project-meta">
+                  <span className="project-date">
+                    Created: {new Date(project.created_at).toLocaleDateString()}
+                  </span>
+                  <span className="project-date">
+                    Updated: {new Date(project.updated_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <div className="project-actions">
+                  <button className="action-btn">📊 Load Forecasting</button>
+                  <button className="action-btn">⚠️ Fault Detection</button>
+                  <button className="action-btn">🔌 Cable Calculator</button>
+                  <button className="action-btn">🔧 Maintenance</button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

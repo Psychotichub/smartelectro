@@ -1,5 +1,6 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const Dotenv = require('dotenv-webpack');
 
 module.exports = {
   entry: './src/index.tsx',
@@ -40,6 +41,12 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, 'public', 'index.html'),
     }),
+    new Dotenv({
+      path: './.env',
+      safe: false,
+      systemvars: true,
+      defaults: false,
+    }),
   ],
   devServer: {
     port: 3001,
@@ -53,7 +60,7 @@ module.exports = {
     proxy: [
       {
         context: ['/api'],
-        target: 'http://localhost:8000',
+        target: process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000',
         changeOrigin: true,
       },
     ],

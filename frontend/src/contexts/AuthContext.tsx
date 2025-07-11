@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 
 interface User {
   id: number;
@@ -45,7 +46,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       formData.append('username', username);
       formData.append('password', password);
 
-      const response = await axios.post('http://localhost:8000/api/auth/token', formData, {
+      const response = await axios.post(API_ENDPOINTS.auth.token, formData, {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
@@ -57,7 +58,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       
       // Get user data from /me endpoint
-      const userResponse = await axios.get('http://localhost:8000/api/auth/me');
+      const userResponse = await axios.get(API_ENDPOINTS.auth.me);
       setUser(userResponse.data);
       setIsAuthenticated(true);
       return true;
@@ -70,7 +71,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
   const register = async (username: string, email: string, password: string): Promise<boolean> => {
     try {
       // Register the user
-      const response = await axios.post('http://localhost:8000/api/auth/register', {
+      const response = await axios.post(API_ENDPOINTS.auth.register, {
         username,
         email,
         password

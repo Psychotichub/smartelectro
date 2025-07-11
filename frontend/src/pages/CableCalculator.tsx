@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 import '../styles/pages/Modules.css';
 
 interface CableCalculationResult {
@@ -66,7 +67,7 @@ const CableCalculator: React.FC = () => {
         ambient_temp: parseInt(inputs.ambient_temp)
       };
 
-      const response = await axios.post('http://localhost:8000/api/cable-calculator/quick-calculate', requestData);
+      const response = await axios.post(API_ENDPOINTS.cableCalculator.quickCalculate, requestData);
       setResult(response.data);
     } catch (error: any) {
       console.error('Error calculating cable:', error);
