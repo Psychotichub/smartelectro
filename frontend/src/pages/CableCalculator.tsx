@@ -1,53 +1,46 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import '../styles/pages/Modules.css';
 
-interface CableCalculation {
-  recommendedSize: string;
-  voltageDrop: number;
-  voltageDropPercentage: number;
-  powerLoss: number;
-  currentCarryingCapacity: number;
-  isCompliant: boolean;
-}
-
-interface CableData {
-  size: string;
-  currentCapacity: number;
-  resistance: number; // ohms per km
-  price: number; // per meter
+interface CableCalculationResult {
+  recommended_cable_size: string;
+  voltage_drop_percentage: number;
+  power_loss_watts: number;
+  current_amperes: number;
+  is_safe: boolean;
+  safety_factor: number;
+  details: {
+    calculated_current: number;
+    derated_current: number;
+    cable_current_capacity: number;
+    installation_factor: number;
+    temperature_factor: number;
+    total_derating: number;
+    voltage_drop_volts: number;
+    voltage_drop_percentage: number;
+    power_loss_watts: number;
+    cable_resistance: number;
+    phases: number;
+    installation_method: string;
+    ambient_temperature: number;
+  };
 }
 
 const CableCalculator: React.FC = () => {
   const [inputs, setInputs] = useState({
     voltage: '',
-    current: '',
-    power: '',
+    power_kw: '',
     distance: '',
-    cableType: 'copper',
-    installationMethod: 'underground',
-    phases: '1',
-    powerFactor: '0.9',
-    ambientTemp: '25'
+    power_factor: '0.8',
+    phases: '3',
+    installation_method: 'air',
+    ambient_temp: '30',
+    voltage_drop_limit: '5.0'
   });
 
-  const [calculation, setCalculation] = useState<CableCalculation | null>(null);
+  const [result, setResult] = useState<CableCalculationResult | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // Cable data (simplified for demo)
-  const cableData: CableData[] = [
-    { size: '1.5mm²', currentCapacity: 15, resistance: 12.1, price: 2.50 },
-    { size: '2.5mm²', currentCapacity: 20, resistance: 7.41, price: 3.20 },
-    { size: '4mm²', currentCapacity: 25, resistance: 4.61, price: 4.10 },
-    { size: '6mm²', currentCapacity: 32, resistance: 3.08, price: 5.80 },
-    { size: '10mm²', currentCapacity: 43, resistance: 1.83, price: 8.90 },
-    { size: '16mm²', currentCapacity: 57, resistance: 1.15, price: 12.50 },
-    { size: '25mm²', currentCapacity: 75, resistance: 0.727, price: 18.20 },
-    { size: '35mm²', currentCapacity: 94, resistance: 0.524, price: 24.60 },
-    { size: '50mm²', currentCapacity: 119, resistance: 0.387, price: 34.80 },
-    { size: '70mm²', currentCapacity: 151, resistance: 0.268, price: 48.90 },
-    { size: '95mm²', currentCapacity: 182, resistance: 0.193, price: 68.50 },
-    { size: '120mm²', currentCapacity: 210, resistance: 0.153, price: 86.20 }
-  ];
+  const [error, setError] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -57,86 +50,53 @@ const CableCalculator: React.FC = () => {
     }));
   };
 
-  const calculateCable = () => {
+  const calculateCable = async () => {
     setLoading(true);
+    setError('');
     
-    // Parse inputs
-    const voltage = parseFloat(inputs.voltage);
-    const distance = parseFloat(inputs.distance) / 1000; // Convert to km
-    const phases = parseInt(inputs.phases);
-    const powerFactor = parseFloat(inputs.powerFactor);
-    const ambientTemp = parseFloat(inputs.ambientTemp);
-    
-    // Calculate current
-    let current: number;
-    if (inputs.current) {
-      current = parseFloat(inputs.current);
-    } else if (inputs.power) {
-      const power = parseFloat(inputs.power);
-      if (phases === 1) {
-        current = power / (voltage * powerFactor);
+    try {
+      const requestData = {
+        voltage: parseFloat(inputs.voltage),
+        power_kw: parseFloat(inputs.power_kw),
+        power_factor: parseFloat(inputs.power_factor),
+        distance: parseFloat(inputs.distance),
+        voltage_drop_limit: parseFloat(inputs.voltage_drop_limit),
+        phases: parseInt(inputs.phases),
+        installation_method: inputs.installation_method,
+        ambient_temp: parseInt(inputs.ambient_temp)
+      };
+
+      const response = await axios.post('http://localhost:8000/api/cable-calculator/quick-calculate', requestData);
+      setResult(response.data);
+    } catch (error: any) {
+      console.error('Error calculating cable:', error);
+      if (error.response?.status === 401) {
+        setError('Authentication failed. Please log in again.');
+      } else if (error.response?.status === 400) {
+        setError(`Invalid input: ${error.response.data.detail}`);
+      } else if (error.code === 'ECONNREFUSED' || error.code === 'ERR_NETWORK') {
+        setError('Unable to connect to the server. Please check if the backend is running.');
       } else {
-        current = power / (Math.sqrt(3) * voltage * powerFactor);
+        setError('Failed to calculate cable size. Please try again.');
       }
-    } else {
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Apply temperature derating factor
-    const tempDerating = ambientTemp > 30 ? 0.8 : 1.0;
-    const adjustedCurrent = current / tempDerating;
-
-    // Find suitable cable size
-    const suitableCable = cableData.find(cable => 
-      cable.currentCapacity >= adjustedCurrent * 1.25 // 25% safety factor
-    );
-
-    if (!suitableCable) {
-      setLoading(false);
-      return;
-    }
-
-    // Calculate voltage drop
-    const resistance = suitableCable.resistance * distance;
-    const voltageDrop = phases === 1 ? 
-      current * resistance : 
-      Math.sqrt(3) * current * resistance;
-    
-    const voltageDropPercentage = (voltageDrop / voltage) * 100;
-
-    // Calculate power loss
-    const powerLoss = Math.pow(current, 2) * resistance;
-
-    // Check compliance (voltage drop should be < 5% for power, < 3% for lighting)
-    const isCompliant = voltageDropPercentage < 5;
-
-    const result: CableCalculation = {
-      recommendedSize: suitableCable.size,
-      voltageDrop: voltageDrop,
-      voltageDropPercentage: voltageDropPercentage,
-      powerLoss: powerLoss,
-      currentCarryingCapacity: suitableCable.currentCapacity,
-      isCompliant: isCompliant
-    };
-
-    setCalculation(result);
-    setLoading(false);
   };
 
   const resetCalculation = () => {
     setInputs({
       voltage: '',
-      current: '',
-      power: '',
+      power_kw: '',
       distance: '',
-      cableType: 'copper',
-      installationMethod: 'underground',
-      phases: '1',
-      powerFactor: '0.9',
-      ambientTemp: '25'
+      power_factor: '0.8',
+      phases: '3',
+      installation_method: 'air',
+      ambient_temp: '30',
+      voltage_drop_limit: '5.0'
     });
-    setCalculation(null);
+    setResult(null);
+    setError('');
   };
 
   return (
@@ -150,6 +110,12 @@ const CableCalculator: React.FC = () => {
         <div className="calculator-container">
           <div className="input-section">
             <h2>Electrical Parameters</h2>
+            
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
             
             <div className="input-grid">
               <div className="input-group">
@@ -165,34 +131,15 @@ const CableCalculator: React.FC = () => {
               </div>
 
               <div className="input-group">
-                <label>Number of Phases</label>
-                <select name="phases" value={inputs.phases} onChange={handleInputChange} aria-label="Number of Phases">
-                  <option value="1">Single Phase</option>
-                  <option value="3">Three Phase</option>
-                </select>
-              </div>
-
-              <div className="input-group">
-                <label>Current (A)</label>
+                <label>Power (kW)</label>
                 <input
                   type="number"
-                  name="current"
-                  value={inputs.current}
+                  name="power_kw"
+                  value={inputs.power_kw}
                   onChange={handleInputChange}
-                  placeholder="e.g., 25"
+                  placeholder="e.g., 5, 10, 15"
                   step="0.1"
-                />
-              </div>
-
-              <div className="input-group">
-                <label>OR Power (W)</label>
-                <input
-                  type="number"
-                  name="power"
-                  value={inputs.power}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 5000"
-                  step="1"
+                  required
                 />
               </div>
 
@@ -203,7 +150,7 @@ const CableCalculator: React.FC = () => {
                   name="distance"
                   value={inputs.distance}
                   onChange={handleInputChange}
-                  placeholder="e.g., 50"
+                  placeholder="e.g., 50, 100"
                   required
                 />
               </div>
@@ -212,10 +159,10 @@ const CableCalculator: React.FC = () => {
                 <label>Power Factor</label>
                 <input
                   type="number"
-                  name="powerFactor"
-                  value={inputs.powerFactor}
+                  name="power_factor"
+                  value={inputs.power_factor}
                   onChange={handleInputChange}
-                  placeholder="0.9"
+                  placeholder="0.8"
                   step="0.1"
                   min="0.1"
                   max="1"
@@ -223,39 +170,48 @@ const CableCalculator: React.FC = () => {
               </div>
 
               <div className="input-group">
-                <label>Cable Type</label>
-                <select name="cableType" value={inputs.cableType} onChange={handleInputChange} aria-label="Cable Type">
-                  <option value="copper">Copper</option>
-                  <option value="aluminum">Aluminum</option>
+                <label>Number of Phases</label>
+                <select name="phases" value={inputs.phases} onChange={handleInputChange} aria-label="Number of Phases">
+                  <option value="1">Single Phase</option>
+                  <option value="3">Three Phase</option>
                 </select>
               </div>
 
               <div className="input-group">
                 <label>Installation Method</label>
-                <select name="installationMethod" value={inputs.installationMethod} onChange={handleInputChange} aria-label="Installation Method">
-                  <option value="underground">Underground</option>
-                  <option value="overhead">Overhead</option>
+                <select name="installation_method" value={inputs.installation_method} onChange={handleInputChange} aria-label="Installation Method">
+                  <option value="air">Air (overhead)</option>
                   <option value="conduit">In Conduit</option>
+                  <option value="buried">Buried Underground</option>
                   <option value="tray">Cable Tray</option>
                 </select>
               </div>
 
               <div className="input-group">
                 <label>Ambient Temperature (°C)</label>
-                <input
-                  type="number"
-                  name="ambientTemp"
-                  value={inputs.ambientTemp}
-                  onChange={handleInputChange}
-                  placeholder="25"
-                />
+                <select name="ambient_temp" value={inputs.ambient_temp} onChange={handleInputChange} aria-label="Ambient Temperature">
+                  <option value="30">30°C</option>
+                  <option value="35">35°C</option>
+                  <option value="40">40°C</option>
+                  <option value="45">45°C</option>
+                  <option value="50">50°C</option>
+                </select>
+              </div>
+
+              <div className="input-group">
+                <label>Voltage Drop Limit (%)</label>
+                <select name="voltage_drop_limit" value={inputs.voltage_drop_limit} onChange={handleInputChange} aria-label="Voltage Drop Limit">
+                  <option value="3.0">3% (Lighting)</option>
+                  <option value="5.0">5% (Power)</option>
+                  <option value="2.5">2.5% (Critical)</option>
+                </select>
               </div>
             </div>
 
             <div className="button-group">
               <button 
                 onClick={calculateCable} 
-                disabled={loading || !inputs.voltage || !inputs.distance || (!inputs.current && !inputs.power)}
+                disabled={loading || !inputs.voltage || !inputs.power_kw || !inputs.distance}
                 className="calculate-btn"
               >
                 {loading ? 'Calculating...' : 'Calculate Cable Size'}
@@ -266,59 +222,97 @@ const CableCalculator: React.FC = () => {
             </div>
           </div>
 
-          {calculation && (
+          {result && (
             <div className="results-section">
               <h2>Calculation Results</h2>
               
               <div className="result-grid">
                 <div className="result-card">
                   <h3>Recommended Cable Size</h3>
-                  <div className="result-value">{calculation.recommendedSize}</div>
+                  <div className="result-value">{result.recommended_cable_size}</div>
                 </div>
 
                 <div className="result-card">
-                  <h3>Current Carrying Capacity</h3>
-                  <div className="result-value">{calculation.currentCarryingCapacity}A</div>
+                  <h3>Current</h3>
+                  <div className="result-value">{result.current_amperes.toFixed(1)}A</div>
                 </div>
 
                 <div className="result-card">
                   <h3>Voltage Drop</h3>
                   <div className="result-value">
-                    {calculation.voltageDrop.toFixed(2)}V 
-                    <span className="percentage">({calculation.voltageDropPercentage.toFixed(2)}%)</span>
+                    {result.details.voltage_drop_volts.toFixed(2)}V 
+                    <span className="percentage">({result.voltage_drop_percentage.toFixed(2)}%)</span>
                   </div>
                 </div>
 
                 <div className="result-card">
                   <h3>Power Loss</h3>
-                  <div className="result-value">{calculation.powerLoss.toFixed(2)}W</div>
+                  <div className="result-value">{result.power_loss_watts.toFixed(2)}W</div>
                 </div>
 
-                <div className={`result-card compliance ${calculation.isCompliant ? 'compliant' : 'non-compliant'}`}>
-                  <h3>Compliance Status</h3>
+                <div className="result-card">
+                  <h3>Cable Capacity</h3>
+                  <div className="result-value">{result.details.cable_current_capacity}A</div>
+                </div>
+
+                <div className={`result-card compliance ${result.is_safe ? 'compliant' : 'non-compliant'}`}>
+                  <h3>Safety Status</h3>
                   <div className="result-value">
-                    {calculation.isCompliant ? '✅ Compliant' : '❌ Non-Compliant'}
+                    {result.is_safe ? '✅ Safe' : '❌ Unsafe'}
                   </div>
                   <small>
-                    {calculation.isCompliant ? 
-                      'Voltage drop is within acceptable limits' : 
-                      'Voltage drop exceeds 5% - consider larger cable'
-                    }
+                    Safety Factor: {result.safety_factor.toFixed(2)}
                   </small>
+                </div>
+              </div>
+
+              <div className="detailed-results">
+                <h3>Detailed Analysis</h3>
+                <div className="details-grid">
+                  <div className="detail-item">
+                    <span className="label">Calculated Current:</span>
+                    <span className="value">{result.details.calculated_current.toFixed(2)}A</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Derated Current:</span>
+                    <span className="value">{result.details.derated_current.toFixed(2)}A</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Installation Factor:</span>
+                    <span className="value">{result.details.installation_factor.toFixed(2)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Temperature Factor:</span>
+                    <span className="value">{result.details.temperature_factor.toFixed(2)}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Cable Resistance:</span>
+                    <span className="value">{result.details.cable_resistance.toFixed(4)}Ω/km</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="label">Total Derating:</span>
+                    <span className="value">{result.details.total_derating.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
 
               <div className="recommendations">
                 <h3>Recommendations</h3>
                 <ul>
-                  {calculation.voltageDropPercentage > 3 && (
-                    <li>⚠️ Consider using a larger cable size to reduce voltage drop</li>
+                  {result.voltage_drop_percentage > 3 && (
+                    <li>⚠️ Voltage drop is {result.voltage_drop_percentage.toFixed(2)}% - consider larger cable if critical</li>
                   )}
-                  {calculation.powerLoss > 100 && (
-                    <li>💡 High power loss detected - larger cable will improve efficiency</li>
+                  {result.power_loss_watts > 100 && (
+                    <li>💡 Power loss is {result.power_loss_watts.toFixed(0)}W - larger cable will improve efficiency</li>
+                  )}
+                  {result.safety_factor < 1.5 && (
+                    <li>⚡ Safety factor is {result.safety_factor.toFixed(2)} - consider next larger cable size</li>
+                  )}
+                  {result.is_safe && result.voltage_drop_percentage <= 3 && (
+                    <li>✅ Excellent selection - meets all safety and efficiency requirements</li>
                   )}
                   <li>🔧 Ensure proper installation according to local electrical codes</li>
-                  <li>📋 Consider environmental factors and load growth</li>
+                  <li>📋 Consider future load growth and environmental factors</li>
                 </ul>
               </div>
             </div>
