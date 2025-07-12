@@ -193,43 +193,99 @@ async def upload_fault_data(
         contents = await file.read()
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
         
-        # Validate required columns
-        required_columns = ['VA', 'VB', 'VC', 'IA', 'IB', 'IC']
-        if not all(col in df.columns for col in required_columns):
+        # Check for frontend format (voltage_a, voltage_b, etc.)
+        frontend_voltage_columns = ['voltage_a', 'voltage_b', 'voltage_c']
+        frontend_current_columns = ['current_a', 'current_b', 'current_c']
+        
+        # Check for backend format (VA, VB, VC, IA, IB, IC)
+        backend_columns = ['VA', 'VB', 'VC', 'IA', 'IB', 'IC']
+        
+        if all(col in df.columns for col in frontend_voltage_columns + frontend_current_columns):
+            # Frontend format detected
+            voltage_data = {
+                'A': df['voltage_a'].tolist(),
+                'B': df['voltage_b'].tolist(),
+                'C': df['voltage_c'].tolist()
+            }
+            
+            current_data = {
+                'A': df['current_a'].tolist(),
+                'B': df['current_b'].tolist(),
+                'C': df['current_c'].tolist()
+            }
+            
+            # Convert to expected format for consistency
+            data = []
+            for i in range(len(df)):
+                row = {
+                    'voltage_a': df['voltage_a'].iloc[i],
+                    'voltage_b': df['voltage_b'].iloc[i],
+                    'voltage_c': df['voltage_c'].iloc[i],
+                    'current_a': df['current_a'].iloc[i],
+                    'current_b': df['current_b'].iloc[i],
+                    'current_c': df['current_c'].iloc[i],
+                    'frequency': df.get('frequency', pd.Series([50.0] * len(df))).iloc[i],
+                    'power_factor': df.get('power_factor', pd.Series([0.8] * len(df))).iloc[i],
+                    'fault_type': df.get('fault_type', pd.Series(['Normal'] * len(df))).iloc[i],
+                    'timestamp': df.get('timestamp', pd.Series([datetime.now().isoformat()] * len(df))).iloc[i]
+                }
+                data.append(row)
+            
+        elif all(col in df.columns for col in backend_columns):
+            # Backend format detected
+            voltage_data = {
+                'A': df['VA'].tolist(),
+                'B': df['VB'].tolist(),
+                'C': df['VC'].tolist()
+            }
+            
+            current_data = {
+                'A': df['IA'].tolist(),
+                'B': df['IB'].tolist(),
+                'C': df['IC'].tolist()
+            }
+            
+            # Convert to expected format for consistency
+            data = []
+            for i in range(len(df)):
+                row = {
+                    'voltage_a': df['VA'].iloc[i],
+                    'voltage_b': df['VB'].iloc[i],
+                    'voltage_c': df['VC'].iloc[i],
+                    'current_a': df['IA'].iloc[i],
+                    'current_b': df['IB'].iloc[i],
+                    'current_c': df['IC'].iloc[i],
+                    'frequency': df.get('frequency', pd.Series([50.0] * len(df))).iloc[i],
+                    'power_factor': df.get('power_factor', pd.Series([0.8] * len(df))).iloc[i],
+                    'fault_type': df.get('fault_type', pd.Series(['Normal'] * len(df))).iloc[i],
+                    'timestamp': df.get('timestamp', pd.Series([datetime.now().isoformat()] * len(df))).iloc[i]
+                }
+                data.append(row)
+        else:
+            # Neither format detected
             raise HTTPException(
                 status_code=400,
-                detail=f"CSV must contain columns: {required_columns}"
+                detail=f"CSV must contain either frontend format {frontend_voltage_columns + frontend_current_columns} or backend format {backend_columns}"
             )
         
         # Validate data
-        for col in required_columns:
-            if df[col].isnull().any():
+        for col in ['voltage_a', 'voltage_b', 'voltage_c', 'current_a', 'current_b', 'current_c']:
+            if col in df.columns and df[col].isna().any():
                 raise HTTPException(
                     status_code=400,
                     detail=f"Column {col} contains null values"
                 )
         
-        # Convert to the expected format
-        voltage_data = {
-            'A': df['VA'].tolist(),
-            'B': df['VB'].tolist(),
-            'C': df['VC'].tolist()
-        }
-        
-        current_data = {
-            'A': df['IA'].tolist(),
-            'B': df['IB'].tolist(),
-            'C': df['IC'].tolist()
-        }
-        
         return {
             "message": "Data uploaded successfully",
-            "voltage_data": voltage_data,
-            "current_data": current_data,
+            "data": data,
             "records_count": len(df)
         }
         
     except Exception as e:
+        import traceback
+        print(f"Error in upload_fault_data: {e}")
+        print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/generate-sample-data")
@@ -273,6 +329,55 @@ async def generate_sample_data(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/models/{project_id}")
+async def get_trained_models(
+    project_id: int,
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get all trained models for a project"""
+    # Verify project exists and belongs to user
+    project = db.query(Project).filter(
+        Project.id == project_id,
+        Project.owner_id == current_user.id
+    ).first()
+    
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Get trained models from filesystem
+    import os
+    import glob
+    import json
+    
+    models_dir = fault_service.models_dir
+    model_files = glob.glob(os.path.join(models_dir, f"*_{current_user.id}_*_metadata.json"))
+    
+    trained_models = []
+    for metadata_file in model_files:
+        try:
+            with open(metadata_file, 'r') as f:
+                metadata = json.load(f)
+            
+            # Extract model name from filename
+            base_name = os.path.basename(metadata_file).replace('_metadata.json', '')
+            model_name = base_name.rsplit('_', 2)[0]  # Remove user_id and timestamp
+            
+            trained_models.append({
+                "model_id": base_name,
+                "model_name": model_name,
+                "model_type": metadata.get('model_type', 'unknown'),
+                "accuracy": metadata.get('accuracy', 0),
+                "fault_types": metadata.get('fault_types', []),
+                "created_at": metadata.get('created_at', ''),
+                "training_time": metadata.get('training_time', 0)
+            })
+        except Exception as e:
+            print(f"Error reading metadata file {metadata_file}: {e}")
+            continue
+    
+    return sorted(trained_models, key=lambda x: x['created_at'], reverse=True)
 
 @router.get("/fault-types")
 async def get_fault_types(current_user = Depends(get_current_active_user)):

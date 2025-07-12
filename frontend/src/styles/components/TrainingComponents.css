@@ -300,8 +300,13 @@
 
 .data-upload h3 {
   color: white;
-  margin-bottom: 1rem;
-  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+}
+
+/* Hidden file input */
+.upload-file-input {
+  display: none;
 }
 
 .upload-zone {

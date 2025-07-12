@@ -3,41 +3,26 @@ import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
 import { useAuth } from '../contexts/AuthContext';
 import {
+  ModelSelector,
   TrainingProgressMonitor,
   TrainingConfig,
-  TrainingResults,
   DataUpload,
-  AnomalyThresholdSelector,
   TrainingProgress,
   TrainingResult
 } from '../components/TrainingComponents';
 import '../styles/pages/Modules.css';
 
-interface SensorData {
+interface FaultData {
+  voltage_a: number;
+  voltage_b: number;
+  voltage_c: number;
+  current_a: number;
+  current_b: number;
+  current_c: number;
+  frequency: number;
+  power_factor: number;
+  fault_type: string;
   timestamp: string;
-  equipment_id: string;
-  equipment_type: string;
-  temperature: number;
-  vibration: number;
-  current: number;
-  voltage: number;
-  pressure: number;
-  humidity: number;
-  is_anomaly?: boolean;
-}
-
-interface MaintenanceAlert {
-  id: string;
-  equipmentId: string;
-  equipmentName: string;
-  type: 'predictive' | 'preventive' | 'corrective';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  description: string;
-  recommendation: string;
-  estimatedCost: number;
-  timeToFailure: number; // days
-  timestamp: string;
-  anomaly_score: number;
 }
 
 interface Project {
@@ -46,31 +31,33 @@ interface Project {
   description: string;
 }
 
-const MaintenanceAlerts: React.FC = () => {
+const FaultDetectionTraining: React.FC = () => {
   const { user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
-  const [selectedEquipmentType, setSelectedEquipmentType] = useState<string>('motor');
-  const [anomalyThreshold, setAnomalyThreshold] = useState<number>(10);
+  const [selectedModel, setSelectedModel] = useState<string>('decision_tree');
   const [trainedModels, setTrainedModels] = useState<TrainingResult[]>([]);
   const [trainingProgress, setTrainingProgress] = useState<TrainingProgress>({
     status: 'idle',
     progress: 0,
     message: ''
   });
-  const [uploadedData, setUploadedData] = useState<SensorData[]>([]);
-  const [detectedAlerts, setDetectedAlerts] = useState<MaintenanceAlert[]>([]);
+  const [uploadedData, setUploadedData] = useState<FaultData[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Equipment type options
-  const equipmentTypes = [
-    { value: 'motor', label: 'Motor' },
-    { value: 'transformer', label: 'Transformer' },
-    { value: 'generator', label: 'Generator' },
-    { value: 'circuit_breaker', label: 'Circuit Breaker' },
-    { value: 'compressor', label: 'Compressor' },
-    { value: 'pump', label: 'Pump' }
+  // Model options
+  const modelOptions = [
+    {
+      value: 'decision_tree',
+      label: 'Decision Tree',
+      description: 'Traditional machine learning approach for fault classification. Fast training and interpretable results with feature importance analysis.'
+    },
+    {
+      value: 'cnn',
+      label: 'CNN',
+      description: 'Convolutional Neural Network for advanced fault pattern recognition. Excellent for complex fault signatures and time-series data.'
+    }
   ];
 
   useEffect(() => {
@@ -100,20 +87,20 @@ const MaintenanceAlerts: React.FC = () => {
     if (!selectedProject) return;
     
     try {
-      const response = await axios.get(`${API_ENDPOINTS.maintenanceAlerts.getAlerts}/${selectedProject}`);
+      const response = await axios.get(`${API_ENDPOINTS.faultDetection.getModels}/${selectedProject}`);
       
       // Transform the API response to match the TrainingResult interface
-      const models: TrainingResult[] = response.data.map((alert: any) => ({
-        model_id: alert.id.toString(),
-        model_type: alert.alert_type || 'anomaly_detection',
-        accuracy: alert.probability_score || 0,
-        training_time: 0, // API doesn't provide training time
+      const models: TrainingResult[] = response.data.map((model: any) => ({
+        model_id: model.model_id,
+        model_type: model.model_type,
+        accuracy: model.accuracy,
+        training_time: model.training_time || 0,
         metrics: {
-          'Severity': alert.severity || 'low',
-          'Probability': alert.probability_score || 0,
-          'Equipment': alert.equipment_name || 'Unknown',
-          'Alert Type': alert.alert_type || 'normal'
-        }
+          'Accuracy': model.accuracy,
+          'Fault Types': model.fault_types?.join(', ') || 'Unknown'
+        },
+        created_at: new Date(model.created_at).toLocaleString(),
+        name: model.model_name
       }));
       
       setTrainedModels(models);
@@ -134,31 +121,30 @@ const MaintenanceAlerts: React.FC = () => {
     try {
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('equipment_type', selectedEquipmentType);
       
-      const response = await axios.post(API_ENDPOINTS.maintenanceAlerts.uploadSensorData, formData, {
+      const response = await axios.post(API_ENDPOINTS.faultDetection.uploadData, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          ...axios.defaults.headers.common, // Preserve existing headers including Authorization
+          ...axios.defaults.headers.common,
         },
       });
       
-      // Convert the response data to SensorData format
+      // Convert the response data to FaultData format
       const data = response.data.data;
-      const sensorData: SensorData[] = data.map((item: any) => ({
-        timestamp: item.timestamp,
-        equipment_id: item.equipment_id,
-        equipment_type: item.equipment_type,
-        temperature: item.temperature,
-        vibration: item.vibration,
-        current: item.current,
-        voltage: item.voltage,
-        pressure: item.pressure,
-        humidity: item.humidity,
-        is_anomaly: item.is_anomaly || false
+      const faultData: FaultData[] = data.map((item: any) => ({
+        voltage_a: item.voltage_a,
+        voltage_b: item.voltage_b,
+        voltage_c: item.voltage_c,
+        current_a: item.current_a,
+        current_b: item.current_b,
+        current_c: item.current_c,
+        frequency: item.frequency,
+        power_factor: item.power_factor,
+        fault_type: item.fault_type,
+        timestamp: item.timestamp
       }));
       
-      setUploadedData(sensorData);
+      setUploadedData(faultData);
       setError('');
     } catch (error: any) {
       console.error('Error uploading data:', error);
@@ -179,30 +165,8 @@ const MaintenanceAlerts: React.FC = () => {
     setLoading(true);
     
     try {
-      const response = await axios.post(API_ENDPOINTS.maintenanceAlerts.generateSample, {
-        equipment_type: selectedEquipmentType,
-        days: 30,
-        hours_per_day: 24
-      });
-      
-      // Convert the response data to SensorData format
-      const timestamps = response.data.data.timestamps;
-      const sensorData = response.data.data.sensor_data;
-      
-      const formattedData: SensorData[] = timestamps.map((timestamp: string, index: number) => ({
-        timestamp,
-        equipment_id: `${selectedEquipmentType}_001`,
-        equipment_type: selectedEquipmentType,
-        temperature: sensorData.temperature[index],
-        vibration: sensorData.vibration[index],
-        current: sensorData.current[index],
-        voltage: sensorData.voltage[index],
-        pressure: sensorData.pressure[index],
-        humidity: sensorData.humidity[index],
-        is_anomaly: false
-      }));
-      
-      setUploadedData(formattedData);
+      const sampleData: FaultData[] = generateSampleFaultData();
+      setUploadedData(sampleData);
       setError('');
     } catch (error: any) {
       console.error('Error generating sample data:', error);
@@ -212,6 +176,64 @@ const MaintenanceAlerts: React.FC = () => {
     }
   };
 
+  const generateSampleFaultData = (): FaultData[] => {
+    const data: FaultData[] = [];
+    const faultTypes = ['Normal', 'L-G', 'L-L', 'L-L-G', '3-Phase'];
+    
+    for (let i = 0; i < 500; i++) {
+      const faultType = faultTypes[Math.floor(Math.random() * faultTypes.length)];
+      const baseVoltage = 230 + Math.random() * 20;
+      const baseCurrent = 10 + Math.random() * 50;
+      
+      let voltage_a = baseVoltage, voltage_b = baseVoltage, voltage_c = baseVoltage;
+      let current_a = baseCurrent, current_b = baseCurrent, current_c = baseCurrent;
+      
+      // Apply fault patterns
+      switch (faultType) {
+        case 'L-G':
+          voltage_a *= 0.3 + Math.random() * 0.3;
+          current_a *= 2 + Math.random() * 2;
+          break;
+        case 'L-L':
+          voltage_a *= 0.5 + Math.random() * 0.3;
+          voltage_b *= 0.5 + Math.random() * 0.3;
+          current_a *= 1.5 + Math.random();
+          current_b *= 1.5 + Math.random();
+          break;
+        case 'L-L-G':
+          voltage_a *= 0.4 + Math.random() * 0.2;
+          voltage_b *= 0.4 + Math.random() * 0.2;
+          current_a *= 1.8 + Math.random();
+          current_b *= 1.8 + Math.random();
+          current_c *= 1.2 + Math.random() * 0.5;
+          break;
+        case '3-Phase':
+          voltage_a *= 0.2 + Math.random() * 0.2;
+          voltage_b *= 0.2 + Math.random() * 0.2;
+          voltage_c *= 0.2 + Math.random() * 0.2;
+          current_a *= 2.5 + Math.random();
+          current_b *= 2.5 + Math.random();
+          current_c *= 2.5 + Math.random();
+          break;
+      }
+      
+      data.push({
+        voltage_a: Math.round(voltage_a * 10) / 10,
+        voltage_b: Math.round(voltage_b * 10) / 10,
+        voltage_c: Math.round(voltage_c * 10) / 10,
+        current_a: Math.round(current_a * 10) / 10,
+        current_b: Math.round(current_b * 10) / 10,
+        current_c: Math.round(current_c * 10) / 10,
+        frequency: 50 + Math.random() * 2 - 1,
+        power_factor: 0.8 + Math.random() * 0.2,
+        fault_type: faultType,
+        timestamp: new Date(Date.now() - Math.random() * 86400000 * 30).toISOString()
+      });
+    }
+    
+    return data;
+  };
+
   const handleTrainModel = async () => {
     if (!selectedProject) {
       setError('Please select a project first.');
@@ -219,7 +241,7 @@ const MaintenanceAlerts: React.FC = () => {
     }
 
     if (uploadedData.length === 0) {
-      setError('Please upload sensor data first.');
+      setError('Please upload fault data first.');
       return;
     }
 
@@ -227,7 +249,7 @@ const MaintenanceAlerts: React.FC = () => {
     setTrainingProgress({
       status: 'training',
       progress: 0,
-      message: 'Initializing anomaly detection training...'
+      message: 'Initializing fault detection training...'
     });
 
     try {
@@ -239,16 +261,16 @@ const MaintenanceAlerts: React.FC = () => {
             return prev;
           }
           
-          const newProgress = prev.progress + Math.random() * 10;
+          const newProgress = prev.progress + Math.random() * 12;
           const progress = Math.min(newProgress, 100);
           
-          let message = 'Initializing anomaly detection training...';
-          if (progress > 10) message = 'Processing sensor data...';
-          if (progress > 25) message = 'Analyzing equipment patterns...';
-          if (progress > 45) message = 'Training anomaly detection model...';
-          if (progress > 65) message = 'Optimizing detection thresholds...';
-          if (progress > 80) message = 'Validating model performance...';
-          if (progress >= 100) message = 'Anomaly detection model trained successfully!';
+          let message = 'Initializing fault detection training...';
+          if (progress > 15) message = 'Processing electrical data...';
+          if (progress > 30) message = 'Extracting fault patterns...';
+          if (progress > 50) message = 'Training classification model...';
+          if (progress > 70) message = 'Optimizing fault detection accuracy...';
+          if (progress > 85) message = 'Validating model performance...';
+          if (progress >= 100) message = 'Fault detection model trained successfully!';
           
           return {
             ...prev,
@@ -256,15 +278,15 @@ const MaintenanceAlerts: React.FC = () => {
             message
           };
         });
-      }, 700);
+      }, 600);
 
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 12000));
+      await new Promise(resolve => setTimeout(resolve, 10000));
       
       setTrainingProgress({
         status: 'completed',
         progress: 100,
-        message: 'Anomaly detection model trained successfully!'
+        message: 'Fault detection model trained successfully!'
       });
       
       await fetchTrainedModels();
@@ -293,13 +315,9 @@ const MaintenanceAlerts: React.FC = () => {
     setError('');
   };
 
-  const handleSelectModel = (modelId: string) => {
-    console.log('Selected model:', modelId);
-  };
-
   const handleDeleteModel = async (modelId: string) => {
     try {
-      await axios.delete(`${API_ENDPOINTS.maintenanceAlerts.getAlerts}/${modelId}`);
+      await axios.delete(`${API_ENDPOINTS.faultDetection.getDetections}/${modelId}`);
       await fetchTrainedModels();
       setError('Model deleted successfully.');
     } catch (error: any) {
@@ -319,8 +337,8 @@ const MaintenanceAlerts: React.FC = () => {
       <div className="electric-training-container">
         {/* Electric Header */}
         <div className="electric-header">
-          <h1>⚡ Maintenance Alerts Training</h1>
-          <p>Train anomaly detection models to predict equipment failures using sensor data</p>
+          <h1>⚡ Fault Detection Training</h1>
+          <p>Train AI models to classify electrical faults using advanced machine learning algorithms</p>
         </div>
 
         <div className="electric-content">
@@ -337,91 +355,83 @@ const MaintenanceAlerts: React.FC = () => {
             <div className="electric-guide-lines">
               <div className="electric-guide-line">
                 <span className="electric-step-number">1</span>
-                <span className="electric-guide-text">Select a project from the dropdown menu where you want to train your maintenance alert model</span>
+                <span className="electric-guide-text">Select a project from the dropdown menu where you want to train your fault detection model</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">2</span>
-                <span className="electric-guide-text">Choose the specific equipment type from available options: motor, transformer, generator, circuit breaker, compressor, or pump</span>
+                <span className="electric-guide-text">Upload labeled fault data CSV file with voltage, current measurements and fault type classifications</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">3</span>
-                <span className="electric-guide-text">Upload sensor data CSV file containing timestamp and sensor readings for your selected equipment type</span>
+                <span className="electric-guide-text">Ensure CSV contains columns: VA, VB, VC (voltages), IA, IB, IC (currents), and fault_type labels</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">4</span>
-                <span className="electric-guide-text">Ensure CSV includes columns: timestamp, temperature, vibration, current, voltage, pressure, and humidity measurements</span>
+                <span className="electric-guide-text">Use sample data option if you don't have your own fault records - generates 500 labeled examples</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">5</span>
-                <span className="electric-guide-text">Use sample data option to generate 30 days of realistic sensor data for testing and demonstration purposes</span>
+                <span className="electric-guide-text">Review data preview table showing voltage, current values and fault classifications for first 5 records</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">6</span>
-                <span className="electric-guide-text">Review sensor data preview showing first 5 records with all measurement parameters and timestamps</span>
+                <span className="electric-guide-text">Check dataset statistics to ensure balanced representation of different fault types in your data</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">7</span>
-                <span className="electric-guide-text">Check data statistics including equipment type, total records, and date range coverage for completeness</span>
+                <span className="electric-guide-text">Choose model type: Decision Tree for fast interpretable results or CNN for complex pattern recognition</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">8</span>
-                <span className="electric-guide-text">Configure anomaly detection threshold percentage - lower values increase sensitivity to detect subtle anomalies</span>
+                <span className="electric-guide-text">Decision Tree models are recommended for real-time applications requiring quick fault classification</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">9</span>
-                <span className="electric-guide-text">Understand that default 10% threshold balances false positives with detection sensitivity for most applications</span>
+                <span className="electric-guide-text">CNN models provide higher accuracy for complex fault patterns but require more training time</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">10</span>
-                <span className="electric-guide-text">Review model information showing Isolation Forest algorithm for detecting anomalous sensor patterns</span>
+                <span className="electric-guide-text">Click "Train Model" button to start training process with automatic feature extraction and validation</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">11</span>
-                <span className="electric-guide-text">Click "Train Model" to start training with automatic feature extraction from six sensor input parameters</span>
+                <span className="electric-guide-text">Monitor training progress showing completion percentage, validation accuracy, and current training phase</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">12</span>
-                <span className="electric-guide-text">Monitor training progress showing completion percentage and validation against historical normal operation patterns</span>
+                <span className="electric-guide-text">Wait for training completion - model will be automatically validated on unseen fault data</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">13</span>
-                <span className="electric-guide-text">Wait for training completion with automatic model validation using unsupervised anomaly detection techniques</span>
+                <span className="electric-guide-text">Review training results including accuracy metrics, confusion matrix, and model performance indicators</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">14</span>
-                <span className="electric-guide-text">Review training results including model performance metrics and anomaly detection capabilities</span>
+                <span className="electric-guide-text">View trained models in the management section with accuracy scores and creation timestamps</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">15</span>
-                <span className="electric-guide-text">View trained models in results section with equipment-specific performance indicators and creation dates</span>
+                <span className="electric-guide-text">Delete underperforming models using the delete button to maintain optimal fault detection accuracy</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">16</span>
-                <span className="electric-guide-text">Select models for deployment to monitor real-time equipment health and predict maintenance needs</span>
+                <span className="electric-guide-text">Navigate to the Prediction page to use your trained models for real-time fault classification</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">17</span>
-                <span className="electric-guide-text">Delete underperforming models to maintain optimal anomaly detection accuracy for critical equipment</span>
+                <span className="electric-guide-text">Test model performance with various fault scenarios before deploying in production environment</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">18</span>
-                <span className="electric-guide-text">Fine-tune threshold settings based on operational requirements and acceptable false positive rates</span>
+                <span className="electric-guide-text">Retrain models regularly with new fault data to maintain classification accuracy and adapt to new patterns</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">19</span>
-                <span className="electric-guide-text">Implement continuous learning by regularly updating models with new sensor data and maintenance records</span>
+                <span className="electric-guide-text">Consider ensemble methods combining multiple models for improved fault detection reliability</span>
               </div>
               <div className="electric-guide-line">
                 <span className="electric-step-number">20</span>
-                <span className="electric-guide-text">Deploy trained models in production environment with automated alert generation and maintenance scheduling</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">21</span>
-                <span className="electric-guide-text">Monitor model performance metrics and retrain periodically to maintain accuracy as equipment ages</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">22</span>
-                <span className="electric-guide-text">Integrate with maintenance management systems for automated work order generation and resource planning</span>
+                <span className="electric-guide-text">Implement continuous monitoring and automated retraining pipelines for production deployment</span>
               </div>
             </div>
           </div>
@@ -434,7 +444,7 @@ const MaintenanceAlerts: React.FC = () => {
               onChange={(e) => setSelectedProject(parseInt(e.target.value))}
               disabled={loading}
               className="electric-select"
-              aria-label="Select project for maintenance alerts model training"
+              aria-label="Select project for fault detection model training"
             >
               <option value="">Choose a project...</option>
               {projects.map((project) => (
@@ -448,25 +458,6 @@ const MaintenanceAlerts: React.FC = () => {
             )}
           </div>
 
-          {/* Equipment Type Selection */}
-          <div className="electric-control-section">
-            <h2>Equipment Type</h2>
-            <select
-              value={selectedEquipmentType}
-              onChange={(e) => setSelectedEquipmentType(e.target.value)}
-              disabled={loading || trainingProgress.status === 'training'}
-              className="electric-select"
-              aria-label="Select equipment type for anomaly detection"
-            >
-              {equipmentTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-            <p className="selection-hint">Different equipment types have different sensor patterns and failure modes.</p>
-          </div>
-
           {/* Data Upload Section */}
           <div className="electric-control-section">
             <h2>Data Upload</h2>
@@ -475,7 +466,7 @@ const MaintenanceAlerts: React.FC = () => {
                 onFileUpload={handleFileUpload}
                 onUseSampleData={handleUseSampleData}
                 acceptedTypes=".csv"
-                sampleDataDescription="30 days of sensor data (temperature, vibration, current, voltage, pressure, humidity)"
+                sampleDataDescription="500 labeled fault records with voltage, current, and fault type classifications"
                 isProcessing={loading}
               />
             </div>
@@ -484,29 +475,29 @@ const MaintenanceAlerts: React.FC = () => {
           {/* Data Preview */}
           {uploadedData.length > 0 && (
             <div className="electric-data-preview">
-              <h3>Sensor Data Preview ({uploadedData.length} records)</h3>
+              <h3>Training Data Preview ({uploadedData.length} records)</h3>
               <table className="electric-preview-table">
                 <thead>
                   <tr>
-                    <th>Timestamp</th>
-                    <th>Temp (°C)</th>
-                    <th>Vibration (mm/s)</th>
-                    <th>Current (A)</th>
-                    <th>Voltage (V)</th>
-                    <th>Pressure (kPa)</th>
-                    <th>Humidity (%)</th>
+                    <th>VA (V)</th>
+                    <th>VB (V)</th>
+                    <th>VC (V)</th>
+                    <th>IA (A)</th>
+                    <th>IB (A)</th>
+                    <th>IC (A)</th>
+                    <th>Fault Type</th>
                   </tr>
                 </thead>
                 <tbody>
                   {uploadedData.slice(0, 5).map((row, index) => (
                     <tr key={index}>
-                      <td>{new Date(row.timestamp).toLocaleString()}</td>
-                      <td>{row.temperature.toFixed(1)}</td>
-                      <td>{row.vibration.toFixed(2)}</td>
-                      <td>{row.current.toFixed(1)}</td>
-                      <td>{row.voltage.toFixed(1)}</td>
-                      <td>{row.pressure.toFixed(1)}</td>
-                      <td>{row.humidity.toFixed(1)}</td>
+                      <td>{row.voltage_a}</td>
+                      <td>{row.voltage_b}</td>
+                      <td>{row.voltage_c}</td>
+                      <td>{row.current_a}</td>
+                      <td>{row.current_b}</td>
+                      <td>{row.current_c}</td>
+                      <td><span className={`fault-label ${row.fault_type.toLowerCase()}`}>{row.fault_type}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -517,22 +508,19 @@ const MaintenanceAlerts: React.FC = () => {
               
               {/* Data Statistics */}
               <div className="data-stats">
-                <h4>Sensor Data Statistics</h4>
+                <h4>Dataset Statistics</h4>
                 <div className="stats-grid">
-                  <div className="stat-item">
-                    <span className="stat-label">Equipment Type:</span>
-                    <span className="stat-value">{selectedEquipmentType}</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Total Records:</span>
-                    <span className="stat-value">{uploadedData.length}</span>
-                  </div>
-                  <div className="stat-item">
-                    <span className="stat-label">Date Range:</span>
-                    <span className="stat-value">
-                      {new Date(uploadedData[0].timestamp).toLocaleDateString()} - {new Date(uploadedData[uploadedData.length - 1].timestamp).toLocaleDateString()}
-                    </span>
-                  </div>
+                  {Object.entries(
+                    uploadedData.reduce((acc, item) => {
+                      acc[item.fault_type] = (acc[item.fault_type] || 0) + 1;
+                      return acc;
+                    }, {} as Record<string, number>)
+                  ).map(([faultType, count]) => (
+                    <div key={faultType} className="stat-item">
+                      <span className="stat-label">{faultType}:</span>
+                      <span className="stat-value">{count} samples</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -543,19 +531,13 @@ const MaintenanceAlerts: React.FC = () => {
             <h2>Training Configuration</h2>
             <div className="electric-config-grid">
               <div className="electric-config-card">
-                <h3>Anomaly Detection Settings</h3>
-                <AnomalyThresholdSelector
-                  value={anomalyThreshold}
-                  onChange={setAnomalyThreshold}
+                <h3>Model Selection</h3>
+                <ModelSelector
+                  models={modelOptions}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
                   disabled={trainingProgress.status === 'training'}
                 />
-                
-                <div className="training-info">
-                  <h4>Model Information</h4>
-                  <p><strong>Algorithm:</strong> Isolation Forest</p>
-                  <p><strong>Purpose:</strong> Detect anomalous sensor patterns indicating potential equipment failure</p>
-                  <p><strong>Input Features:</strong> Temperature, Vibration, Current, Voltage, Pressure, Humidity</p>
-                </div>
               </div>
             </div>
             
@@ -564,10 +546,9 @@ const MaintenanceAlerts: React.FC = () => {
                 <p>⚠️ Requirements for training:</p>
                 <ul>
                   <li>Select a project</li>
-                  <li>Choose equipment type</li>
-                  <li>Upload sensor data (CSV with timestamp and sensor readings)</li>
-                  <li>Set anomaly threshold (default: 10%)</li>
+                  <li>Upload labeled fault data (CSV format)</li>
                 </ul>
+                <p>💡 Use sample data if you don't have your own fault records yet.</p>
               </div>
             )}
           </div>
@@ -597,7 +578,7 @@ const MaintenanceAlerts: React.FC = () => {
             </div>
           )}
 
-          {/* Training Results */}
+          {/* Trained Models Management */}
           {trainedModels.length > 0 && (
             <div className="electric-control-section">
               <h2>Trained Models</h2>
@@ -614,19 +595,11 @@ const MaintenanceAlerts: React.FC = () => {
                         <span className="metric-value">{(model.accuracy * 100).toFixed(1)}%</span>
                       </div>
                       <div className="metric">
-                        <span className="metric-label">Equipment:</span>
-                        <span className="metric-value">{selectedEquipmentType}</span>
+                        <span className="metric-label">Created:</span>
+                        <span className="metric-value">{model.created_at}</span>
                       </div>
                     </div>
                     <div className="model-actions">
-                      <button
-                        onClick={() => model.model_id && handleSelectModel(model.model_id)}
-                        className="select-btn"
-                        title="Select model"
-                        disabled={!model.model_id}
-                      >
-                        ✓ Select
-                      </button>
                       <button
                         onClick={() => model.model_id && handleDeleteModel(model.model_id)}
                         className="delete-btn"
@@ -647,4 +620,4 @@ const MaintenanceAlerts: React.FC = () => {
   );
 };
 
-export default MaintenanceAlerts; 
+export default FaultDetectionTraining; 

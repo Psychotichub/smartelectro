@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import '../styles/pages/Dashboard.css';
+import '../styles/pages/Modules.css';
 
 interface DashboardStats {
   totalProjects: number;
@@ -78,111 +78,120 @@ const Dashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="dashboard-loading">
-        <div className="loading-spinner"></div>
-        <p>Loading dashboard...</p>
+      <div className="electric-training-container">
+        <div className="electric-content">
+          <div className="electric-control-section">
+            <div className="loading-spinner"></div>
+            <p className="electric-loading-text">Loading dashboard...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="dashboard">
-      <div className="dashboard-header">
-        <h1>Dashboard</h1>
-        <p>Welcome to SmartElectro AI - Your electrical engineering assistant</p>
+    <div className="electric-training-container">
+      <div className="electric-header">
+        <h1>⚡ SmartElectro AI Dashboard</h1>
+        <p>Welcome to your electrical engineering command center</p>
       </div>
 
-      <div className="stats-grid">
-        <div className="stat-card">
-          <div className="stat-icon">📁</div>
-          <div className="stat-content">
-            <h3>{stats.totalProjects}</h3>
-            <p>Total Projects</p>
+      <div className="electric-content">
+        <div className="electric-control-section">
+          <h2>⚡ System Statistics</h2>
+          <div className="electric-config-grid">
+            <div className="electric-model-card">
+              <div className="stat-icon">📁</div>
+              <div className="stat-content">
+                <h3 className="electric-stat-value">{stats.totalProjects}</h3>
+                <p className="electric-stat-text">Total Projects</p>
+              </div>
+            </div>
+            
+            <div className="electric-model-card">
+              <div className="stat-icon">📈</div>
+              <div className="stat-content">
+                <h3 className="electric-stat-value">{stats.totalForecasts}</h3>
+                <p className="electric-stat-text">Load Forecasts</p>
+              </div>
+            </div>
+            
+            <div className="electric-model-card">
+              <div className="stat-icon">⚡</div>
+              <div className="stat-content">
+                <h3 className="electric-stat-value">{stats.totalFaultDetections}</h3>
+                <p className="electric-stat-text">Fault Detections</p>
+              </div>
+            </div>
+            
+            <div className="electric-model-card">
+              <div className="stat-icon">🔌</div>
+              <div className="stat-content">
+                <h3 className="electric-stat-value">{stats.totalCableCalculations}</h3>
+                <p className="electric-stat-text">Cable Calculations</p>
+              </div>
+            </div>
+            
+            <div className="electric-model-card">
+              <div className="stat-icon">🚨</div>
+              <div className="stat-content">
+                <h3 className="electric-stat-critical">{stats.criticalAlerts}</h3>
+                <p className="electric-stat-text">Critical Alerts</p>
+              </div>
+            </div>
+            
+            <div className="electric-model-card">
+              <div className="stat-icon">🔧</div>
+              <div className="stat-content">
+                <h3 className="electric-stat-value">{stats.totalMaintenanceAlerts}</h3>
+                <p className="electric-stat-text">Maintenance Alerts</p>
+              </div>
+            </div>
           </div>
         </div>
-        
-        <div className="stat-card">
-          <div className="stat-icon">📈</div>
-          <div className="stat-content">
-            <h3>{stats.totalForecasts}</h3>
-            <p>Load Forecasts</p>
-          </div>
-        </div>
-        
-        <div className="stat-card">
-          <div className="stat-icon">⚡</div>
-          <div className="stat-content">
-            <h3>{stats.totalFaultDetections}</h3>
-            <p>Fault Detections</p>
-          </div>
-        </div>
-        
-        <div className="stat-card">
-          <div className="stat-icon">🔌</div>
-          <div className="stat-content">
-            <h3>{stats.totalCableCalculations}</h3>
-            <p>Cable Calculations</p>
-          </div>
-        </div>
-        
-        <div className="stat-card">
-          <div className="stat-icon">🚨</div>
-          <div className="stat-content">
-            <h3>{stats.criticalAlerts}</h3>
-            <p>Critical Alerts</p>
-          </div>
-        </div>
-        
-        <div className="stat-card">
-          <div className="stat-icon">🔧</div>
-          <div className="stat-content">
-            <h3>{stats.totalMaintenanceAlerts}</h3>
-            <p>Maintenance Alerts</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="modules-section">
-        <h2>AI Modules</h2>
-        <div className="modules-grid">
-          {modules.map((module, index) => (
-            <Link
-              key={index}
-              to={module.path}
-              className={`module-card ${module.className}`}
-            >
-              <div className="module-icon">
-                {module.icon}
-              </div>
-              <div className="module-content">
-                <h3>{module.title}</h3>
-                <p>{module.description}</p>
-              </div>
-              <div className="module-arrow">→</div>
+        <div className="electric-control-section">
+          <h2>🔬 AI Modules</h2>
+          <div className="electric-config-grid">
+            {modules.map((module, index) => (
+              <Link
+                key={index}
+                to={module.path}
+                className="electric-model-card electric-module-link"
+              >
+                <div className="electric-module-icon">
+                  {module.icon}
+                </div>
+                <div className="module-content">
+                  <h3 className="electric-module-title">{module.title}</h3>
+                  <p className="electric-module-description">{module.description}</p>
+                </div>
+                <div className="electric-module-arrow">→</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="electric-control-section">
+          <h2>⚡ Quick Actions</h2>
+          <div className="electric-config-grid">
+            <Link to="/projects" className="electric-model-card electric-module-link">
+              <span className="electric-action-icon">📁</span>
+              <span className="electric-action-text">Create New Project</span>
             </Link>
-          ))}
-        </div>
-      </div>
-
-      <div className="quick-actions">
-        <h2>Quick Actions</h2>
-        <div className="action-buttons">
-          <Link to="/projects" className="action-button">
-            <span className="action-icon">📁</span>
-            <span>Create New Project</span>
-          </Link>
-          <Link to="/load-forecasting" className="action-button">
-            <span className="action-icon">📊</span>
-            <span>Start Load Forecast</span>
-          </Link>
-          <Link to="/fault-detection" className="action-button">
-            <span className="action-icon">⚠️</span>
-            <span>Analyze Fault Data</span>
-          </Link>
-          <Link to="/cable-calculator" className="action-button">
-            <span className="action-icon">🔌</span>
-            <span>Calculate Cable Size</span>
-          </Link>
+            <Link to="/load-forecasting" className="electric-model-card electric-module-link">
+              <span className="electric-action-icon">📊</span>
+              <span className="electric-action-text">Start Load Forecast</span>
+            </Link>
+            <Link to="/fault-detection" className="electric-model-card electric-module-link">
+              <span className="electric-action-icon">⚠️</span>
+              <span className="electric-action-text">Analyze Fault Data</span>
+            </Link>
+            <Link to="/cable-calculator" className="electric-model-card electric-module-link">
+              <span className="electric-action-icon">🔌</span>
+              <span className="electric-action-text">Calculate Cable Size</span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>

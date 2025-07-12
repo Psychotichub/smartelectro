@@ -1547,7 +1547,7 @@
   color: #ff5722;
 }
 
-.fault-label.3-phase {
+.fault-label.three-phase {
   background: rgba(244, 67, 54, 0.2);
   color: #f44336;
 }
@@ -1638,4 +1638,1924 @@
   .preview-table td {
     padding: 0.5rem;
   }
-} 
+}
+
+/* Forecast Results Styles */
+.forecast-results {
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.forecast-results h3 {
+  color: white;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.forecast-info {
+  margin-bottom: 1.5rem;
+}
+
+.forecast-info p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.5rem;
+}
+
+.forecast-chart {
+  margin-bottom: 2rem;
+}
+
+.forecast-chart h4 {
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.chart-container {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.chart-header {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  margin-bottom: 1rem;
+  font-weight: 600;
+  color: white;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.chart-row:last-child {
+  border-bottom: none;
+}
+
+.chart-row .time {
+  font-size: 0.9rem;
+}
+
+.chart-row .load {
+  font-weight: 600;
+  color: #10b981;
+}
+
+.chart-row .confidence {
+  color: #3b82f6;
+}
+
+.chart-row .more-data {
+  grid-column: 1 / -1;
+  text-align: center;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.forecast-summary h4 {
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.summary-stats .stat {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1rem;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-stats .stat label {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 500;
+}
+
+.summary-stats .stat span {
+  color: white;
+  font-weight: 600;
+}
+
+/* Fault Testing Styles */
+.fault-testing {
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.fault-testing h3 {
+  color: white;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.test-info {
+  margin-bottom: 1.5rem;
+}
+
+.test-info p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.5rem;
+}
+
+.test-inputs {
+  margin-bottom: 2rem;
+}
+
+.test-inputs .input-section {
+  background: rgba(0, 0, 0, 0.2);
+  margin-bottom: 1.5rem;
+}
+
+.test-inputs h4 {
+  color: white;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+.phase-inputs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.phase-inputs .input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.phase-inputs .input-group label {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.phase-inputs .input-group input {
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 1rem;
+}
+
+.test-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.classify-btn,
+.simulate-btn {
+  background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.classify-btn:hover,
+.simulate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.simulate-btn {
+  background: linear-gradient(45deg, #f59e0b, #d97706);
+}
+
+.simulate-btn:hover {
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.classification-results {
+  margin-top: 2rem;
+}
+
+.classification-results h4 {
+  color: white;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.classification-results .result-card {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.classification-results .result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.classification-results .fault-type {
+  background: linear-gradient(45deg, #3b82f6, #1d4ed8);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.classification-results .fault-type.l-g {
+  background: linear-gradient(45deg, #f59e0b, #d97706);
+}
+
+.classification-results .fault-type.l-l {
+  background: linear-gradient(45deg, #ef4444, #dc2626);
+}
+
+.classification-results .fault-type.l-l-g {
+  background: linear-gradient(45deg, #dc2626, #991b1b);
+}
+
+.classification-results .fault-type.normal {
+  background: linear-gradient(45deg, #10b981, #059669);
+}
+
+.classification-results .severity {
+  padding: 0.4rem 0.8rem;
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.classification-results .severity.low {
+  background-color: #10b981;
+  color: white;
+}
+
+.classification-results .severity.medium {
+  background-color: #f59e0b;
+  color: white;
+}
+
+.classification-results .severity.high {
+  background-color: #ef4444;
+  color: white;
+}
+
+.classification-results .severity.critical {
+  background-color: #dc2626;
+  color: white;
+}
+
+.classification-results .result-details {
+  margin-bottom: 1.5rem;
+}
+
+.classification-results .result-details p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.5rem;
+}
+
+.classification-results .recommendations h5 {
+  color: white;
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.classification-results .recommendations ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+.classification-results .recommendations li {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.classification-results .recommendations li:before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: #10b981;
+  font-weight: bold;
+}
+
+/* Landing Page Styles for Restructured Pages */
+.restructure-notice {
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 3rem;
+}
+
+.restructure-notice h2 {
+  color: white;
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+  text-align: center;
+}
+
+.restructure-notice p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 2rem;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+/* Workflow Cards */
+.workflow-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.workflow-card {
+  background: rgba(255, 255, 255, 0.15);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.workflow-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.workflow-card .card-header {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(147, 51, 234, 0.3));
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.workflow-card .card-header h3 {
+  color: white;
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.workflow-card .card-content {
+  padding: 1.5rem;
+}
+
+.workflow-card .card-content p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1rem;
+  font-size: 1rem;
+}
+
+.workflow-card .card-content ul {
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 1.5rem;
+  padding-left: 1.2rem;
+}
+
+.workflow-card .card-content li {
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.workflow-btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+}
+
+.training-btn {
+  background: linear-gradient(45deg, #059669, #10b981);
+  color: white;
+}
+
+.training-btn:hover {
+  background: linear-gradient(45deg, #047857, #059669);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.prediction-btn {
+  background: linear-gradient(45deg, #7c3aed, #a855f7);
+  color: white;
+}
+
+.prediction-btn:hover {
+  background: linear-gradient(45deg, #6d28d9, #7c3aed);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+}
+
+/* Quick Access Section */
+.quick-access {
+  margin-bottom: 3rem;
+}
+
+.quick-access h3 {
+  color: white;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.quick-links {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.quick-link {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  gap: 1rem;
+}
+
+.quick-link:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateX(5px);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.quick-link .icon {
+  font-size: 2rem;
+  opacity: 0.9;
+}
+
+.quick-link h4 {
+  color: white;
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+}
+
+.quick-link p {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Benefits Section */
+.benefits-section {
+  margin-bottom: 2rem;
+}
+
+.benefits-section h3 {
+  color: white;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+.benefits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+
+.benefit-item {
+  background: rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.benefit-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.benefit-item h4 {
+  color: white;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.benefit-item p {
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+/* Fault Types Overview */
+.fault-types-overview {
+  margin-bottom: 2rem;
+}
+
+.fault-types-overview h3 {
+  color: white;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+/* Mobile Responsiveness for Landing Pages */
+@media (max-width: 768px) {
+  .workflow-cards {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .workflow-card .card-header {
+    padding: 1.2rem;
+  }
+  
+  .workflow-card .card-content {
+    padding: 1.2rem;
+  }
+  
+  .quick-links {
+    grid-template-columns: 1fr;
+  }
+  
+  .quick-link {
+    padding: 1.2rem;
+  }
+  
+  .benefits-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .restructure-notice {
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+}
+
+/* Prediction Guide Styles */
+.prediction-guide {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 15px;
+  padding: 25px;
+  margin: 30px 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.prediction-guide h3 {
+  color: #61dafb;
+  margin-bottom: 20px;
+  font-size: 1.4em;
+  text-align: center;
+}
+
+.guide-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.guide-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border-left: 3px solid #61dafb;
+  transition: all 0.3s ease;
+}
+
+.guide-line:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(5px);
+}
+
+.guide-line .step-number {
+  color: #61dafb;
+  font-weight: bold;
+  font-size: 1.1em;
+  min-width: 30px;
+  text-align: center;
+  background: rgba(97, 218, 251, 0.1);
+  border-radius: 50%;
+  padding: 8px 10px;
+  line-height: 1;
+}
+
+.guide-line .guide-text {
+  color: #e6f3ff;
+  line-height: 1.6;
+  font-size: 0.95em;
+  flex: 1;
+}
+
+/* Enhanced Chart Styles */
+.chart-container {
+  max-height: 600px;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.chart-header {
+  display: grid;
+  grid-template-columns: 60px 180px 140px 120px 100px 80px;
+  gap: 15px;
+  padding: 15px;
+  background: rgba(97, 218, 251, 0.1);
+  border-bottom: 2px solid #61dafb;
+  font-weight: bold;
+  color: #61dafb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 60px 180px 140px 120px 100px 80px;
+  gap: 15px;
+  padding: 12px 15px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.3s ease;
+}
+
+.chart-row:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.chart-row:hover {
+  background: rgba(97, 218, 251, 0.05);
+}
+
+.chart-row .hour {
+  color: #61dafb;
+  font-weight: bold;
+  text-align: center;
+}
+
+.chart-row .time {
+  color: #e6f3ff;
+  font-size: 0.9em;
+}
+
+.chart-row .load {
+  color: #90EE90;
+  font-weight: bold;
+}
+
+.chart-row .trend {
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+.chart-row .trend.increasing {
+  color: #ff6b6b;
+}
+
+.chart-row .trend.decreasing {
+  color: #4ecdc4;
+}
+
+.chart-row .trend.stable {
+  color: #ffd93d;
+}
+
+.chart-row .trend.initial {
+  color: #999;
+}
+
+.chart-row .confidence {
+  font-weight: bold;
+  text-align: center;
+}
+
+.chart-row .confidence.high {
+  color: #90EE90;
+}
+
+.chart-row .confidence.medium {
+  color: #ffd93d;
+}
+
+.chart-row .confidence.low {
+  color: #ff6b6b;
+}
+
+.chart-row .status {
+  font-weight: bold;
+  text-align: center;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.chart-row .status.high-load {
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+}
+
+.chart-row .status.medium-load {
+  background: rgba(255, 217, 61, 0.2);
+  color: #ffd93d;
+}
+
+.chart-row .status.low-load {
+  background: rgba(144, 238, 144, 0.2);
+  color: #90EE90;
+}
+
+/* Enhanced Summary Stats */
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.summary-stats .stat {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.summary-stats .stat:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
+
+.summary-stats .stat label {
+  color: #61dafb;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+.summary-stats .stat span {
+  color: #90EE90;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+/* Enhanced Insights Grid */
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.insights-grid .insight {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.insights-grid .insight:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.insights-grid .insight h5 {
+  color: #61dafb;
+  margin-bottom: 10px;
+  font-size: 1.1em;
+}
+
+.insights-grid .insight p {
+  color: #e6f3ff;
+  line-height: 1.6;
+  font-size: 0.95em;
+}
+
+/* Enhanced Electrical Parameters */
+.electrical-parameters {
+  margin-top: 30px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 25px;
+  border-radius: 15px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.electrical-parameters h5 {
+  color: #61dafb;
+  margin-bottom: 20px;
+  font-size: 1.3em;
+  text-align: center;
+}
+
+.parameters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.parameter-section {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.parameter-section h6 {
+  color: #61dafb;
+  margin-bottom: 15px;
+  font-size: 1.1em;
+  text-align: center;
+  border-bottom: 2px solid rgba(97, 218, 251, 0.3);
+  padding-bottom: 8px;
+}
+
+.parameter-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.parameter-row:last-child {
+  border-bottom: none;
+}
+
+.parameter-row span:first-child {
+  color: #e6f3ff;
+  font-weight: bold;
+}
+
+.parameter-row span:last-child {
+  font-weight: bold;
+}
+
+.parameter-row .normal {
+  color: #90EE90;
+}
+
+.parameter-row .abnormal {
+  color: #ff6b6b;
+}
+
+.parameter-row .excellent {
+  color: #90EE90;
+}
+
+.parameter-row .good {
+  color: #4ecdc4;
+}
+
+.parameter-row .poor {
+  color: #ff6b6b;
+}
+
+.parameter-row .healthy {
+  color: #90EE90;
+}
+
+.parameter-row .warning {
+  color: #ffd93d;
+}
+
+/* Enhanced Health Metrics */
+.health-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.metric-card {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.metric-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-3px);
+}
+
+.metric-card h5 {
+  color: #61dafb;
+  margin-bottom: 15px;
+  font-size: 1.1em;
+}
+
+.metric-card .metric-value {
+  color: #90EE90;
+  font-size: 1.8em;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.metric-card .metric-status {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+
+.metric-card .metric-status:contains("Excellent") {
+  background: rgba(144, 238, 144, 0.2);
+  color: #90EE90;
+}
+
+.metric-card .metric-status:contains("Good") {
+  background: rgba(78, 205, 196, 0.2);
+  color: #4ecdc4;
+}
+
+.metric-card .metric-status:contains("Warning") {
+  background: rgba(255, 217, 61, 0.2);
+  color: #ffd93d;
+}
+
+.metric-card .metric-status:contains("Critical") {
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+}
+
+.metric-card .metric-status:contains("Healthy") {
+  background: rgba(144, 238, 144, 0.2);
+  color: #90EE90;
+}
+
+.metric-card .metric-status:contains("Alert") {
+  background: rgba(255, 107, 107, 0.2);
+  color: #ff6b6b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .chart-header,
+  .chart-row {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+  
+  .chart-header span,
+  .chart-row span {
+    padding: 5px;
+    text-align: center;
+  }
+  
+  .guide-line {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .guide-line .step-number {
+    align-self: flex-start;
+  }
+  
+  .parameters-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .summary-stats {
+    grid-template-columns: 1fr;
+  }
+  
+  .insights-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== ELECTRICAL FUTURISTIC THEME ===== */
+
+/* Electric Training Container */
+.electric-training-container {
+  background: linear-gradient(135deg, #0f1419 0%, #1a2332 50%, #0f1419 100%);
+  border: 2px solid #00d4ff;
+  border-radius: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 
+    0 0 40px rgba(0, 212, 255, 0.3),
+    inset 0 0 40px rgba(0, 212, 255, 0.1);
+  animation: electricPulse 3s ease-in-out infinite;
+}
+
+.electric-training-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(255, 0, 150, 0.1) 0%, transparent 50%),
+    linear-gradient(45deg, transparent 30%, rgba(0, 212, 255, 0.05) 50%, transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+@keyframes electricPulse {
+  0%, 100% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.3), inset 0 0 40px rgba(0, 212, 255, 0.1); }
+  50% { box-shadow: 0 0 60px rgba(0, 212, 255, 0.5), inset 0 0 60px rgba(0, 212, 255, 0.2); }
+}
+
+/* Electric Header */
+.electric-header {
+  background: linear-gradient(90deg, #00d4ff 0%, #ff0096 50%, #00d4ff 100%);
+  background-size: 200% 100%;
+  animation: electricFlow 4s ease-in-out infinite;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
+  padding: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.electric-header h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  text-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+  margin: 0;
+  letter-spacing: 2px;
+}
+
+.electric-header p {
+  font-size: 1.3rem;
+  color: #a0d7ff;
+  margin: 1rem 0 0 0;
+  text-shadow: 0 0 10px rgba(160, 215, 255, 0.5);
+}
+
+@keyframes electricFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Electric Content Layout */
+.electric-content {
+  position: relative;
+  z-index: 2;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Electric Guidelines Section */
+.electric-guidelines {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(255, 0, 150, 0.1) 100%);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 16px;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.electric-guidelines::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: 
+    linear-gradient(45deg, transparent 48%, rgba(0, 212, 255, 0.1) 49%, rgba(0, 212, 255, 0.1) 51%, transparent 52%),
+    linear-gradient(-45deg, transparent 48%, rgba(255, 0, 150, 0.1) 49%, rgba(255, 0, 150, 0.1) 51%, transparent 52%);
+  background-size: 20px 20px;
+  animation: circuitPattern 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes circuitPattern {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.electric-guidelines h3 {
+  color: #00d4ff;
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  position: relative;
+  z-index: 1;
+}
+
+.electric-guide-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  position: relative;
+  z-index: 1;
+}
+
+.electric-guide-line {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 1.2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-left: 3px solid #00d4ff;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+.electric-guide-line:hover {
+  background: rgba(0, 212, 255, 0.1);
+  border-left-color: #ff0096;
+  transform: translateX(5px);
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+}
+
+.electric-step-number {
+  background: linear-gradient(135deg, #00d4ff, #ff0096);
+  color: white;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.electric-guide-text {
+  color: #e0f2ff;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* Electric Control Sections */
+.electric-control-section {
+  background: linear-gradient(135deg, rgba(15, 20, 25, 0.8) 0%, rgba(26, 35, 50, 0.8) 100%);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  border-radius: 16px;
+  padding: 2rem;
+  position: relative;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.electric-control-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  animation: electricScan 2s ease-in-out infinite;
+}
+
+@keyframes electricScan {
+  0% { opacity: 0; transform: translateX(-100%); }
+  50% { opacity: 1; transform: translateX(0); }
+  100% { opacity: 0; transform: translateX(100%); }
+}
+
+.electric-control-section h2 {
+  color: #00d4ff;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.electric-control-section h2::before {
+  content: '⚡';
+  font-size: 1.2rem;
+  animation: electricFlicker 2s ease-in-out infinite;
+}
+
+@keyframes electricFlicker {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Electric Select and Input Elements */
+.electric-select, .electric-input {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(255, 0, 150, 0.1) 100%);
+  border: 2px solid rgba(0, 212, 255, 0.3);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  color: #e0f2ff;
+  font-size: 1rem;
+  width: 100%;
+  transition: all 0.3s ease;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+.electric-select:focus, .electric-input:focus {
+  outline: none;
+  border-color: #00d4ff;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(255, 0, 150, 0.2) 100%);
+}
+
+.electric-select option {
+  background: #1a2332;
+  color: #e0f2ff;
+}
+
+/* Electric Upload Section */
+.electric-upload-section {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, rgba(255, 0, 150, 0.05) 100%);
+  border: 2px dashed rgba(0, 212, 255, 0.4);
+  border-radius: 16px;
+  padding: 3rem;
+  text-align: center;
+  position: relative;
+  transition: all 0.3s ease;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.electric-upload-section:hover {
+  border-color: #00d4ff;
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(255, 0, 150, 0.1) 100%);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+}
+
+.electric-upload-section::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(0, 212, 255, 0.2) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: electricPulse 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Electric Configuration Grid */
+.electric-config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.electric-config-card {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(255, 0, 150, 0.05) 100%);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+}
+
+.electric-config-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  animation: electricFlow 3s ease-in-out infinite;
+}
+
+/* Electric Train Button */
+.electric-train-button {
+  background: linear-gradient(135deg, #00d4ff 0%, #ff0096 100%);
+  border: none;
+  color: white;
+  padding: 1.5rem 3rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 50px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+  margin: 2rem auto;
+  display: block;
+  min-width: 200px;
+}
+
+.electric-train-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.electric-train-button:hover::before {
+  left: 100%;
+}
+
+.electric-train-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 50px rgba(0, 212, 255, 0.8);
+}
+
+.electric-train-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+}
+
+/* Electric Data Preview */
+.electric-data-preview {
+  background: linear-gradient(135deg, rgba(15, 20, 25, 0.9) 0%, rgba(26, 35, 50, 0.9) 100%);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem 0;
+  position: relative;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.electric-data-preview h3 {
+  color: #00d4ff;
+  font-size: 1.4rem;
+  margin-bottom: 1rem;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.5);
+}
+
+.electric-preview-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.electric-preview-table th,
+.electric-preview-table td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+}
+
+.electric-preview-table th {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.2) 0%, rgba(255, 0, 150, 0.2) 100%);
+  color: #00d4ff;
+  font-weight: bold;
+  text-shadow: 0 0 5px rgba(0, 212, 255, 0.5);
+}
+
+.electric-preview-table td {
+  color: #e0f2ff;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.electric-preview-table tr:hover td {
+  background: rgba(0, 212, 255, 0.1);
+}
+
+/* Electric Progress Monitor */
+.electric-progress-monitor {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(255, 0, 150, 0.1) 100%);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  border-radius: 16px;
+  padding: 2rem;
+  position: relative;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.electric-progress-bar {
+  width: 100%;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.electric-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00d4ff, #ff0096);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+  position: relative;
+}
+
+.electric-progress-fill::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: progressShine 2s ease-in-out infinite;
+}
+
+@keyframes progressShine {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Electric Model Cards */
+.electric-model-card {
+  background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(255, 0, 150, 0.05) 100%);
+  border: 1px solid rgba(0, 212, 255, 0.3);
+  border-radius: 16px;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.electric-model-card:hover {
+  border-color: #00d4ff;
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+  transform: translateY(-5px);
+}
+
+.electric-model-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+  animation: electricScan 3s ease-in-out infinite;
+}
+
+/* Electric Status Indicators */
+.electric-status {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.electric-status.normal {
+  background: linear-gradient(135deg, #00ff88, #00cc66);
+  color: #003311;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+}
+
+.electric-status.warning {
+  background: linear-gradient(135deg, #ffaa00, #ff8800);
+  color: #331100;
+  box-shadow: 0 0 15px rgba(255, 170, 0, 0.5);
+}
+
+.electric-status.critical {
+  background: linear-gradient(135deg, #ff0066, #cc0044);
+  color: #330011;
+  box-shadow: 0 0 15px rgba(255, 0, 102, 0.5);
+}
+
+/* Electric Animations */
+@keyframes electricFlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes electricGlow {
+  0%, 100% { text-shadow: 0 0 10px rgba(0, 212, 255, 0.5); }
+  50% { text-shadow: 0 0 20px rgba(0, 212, 255, 0.8); }
+}
+
+/* Electric Responsive Design */
+@media (max-width: 768px) {
+  .electric-header h1 {
+    font-size: 2rem;
+  }
+  
+  .electric-content {
+    padding: 1rem;
+  }
+  
+  .electric-config-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .electric-train-button {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+  }
+  
+  .electric-guidelines {
+    padding: 1.5rem;
+  }
+  
+  .electric-guide-line {
+    padding: 0.6rem 1rem;
+  }
+  
+  .electric-step-number {
+    width: 25px;
+    height: 25px;
+    font-size: 0.8rem;
+  }
+
+  .electric-auth-container {
+    padding: 1rem;
+  }
+
+  .electric-auth-title {
+    font-size: 2rem;
+  }
+
+  .electric-project-header-controls {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .electric-project-form-grid {
+    flex-direction: column;
+  }
+
+  .electric-button-row {
+    flex-direction: column;
+  }
+}
+
+/* Additional Styles for Components without Inline Styles */
+
+/* Loading Text */
+.electric-loading-text {
+  color: #00d4ff;
+  text-align: center;
+}
+
+/* Dashboard Stat Content */
+.electric-stat-value {
+  color: #00d4ff;
+}
+
+.electric-stat-text {
+  color: #e0f2ff;
+}
+
+.electric-stat-critical {
+  color: #ff0096;
+}
+
+/* Module Link Styles */
+.electric-module-link {
+  text-decoration: none;
+}
+
+.electric-module-icon {
+  font-size: 3rem;
+  text-align: center;
+}
+
+.electric-module-title {
+  color: #00d4ff;
+  margin-bottom: 0.5rem;
+}
+
+.electric-module-description {
+  color: #e0f2ff;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.electric-module-arrow {
+  color: #ff0096;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+/* Quick Action Styles */
+.electric-action-icon {
+  font-size: 2rem;
+}
+
+.electric-action-text {
+  color: #00d4ff;
+  font-size: 1.1rem;
+}
+
+/* Auth Page Styles */
+.electric-auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.electric-auth-content {
+  max-width: 400px;
+  width: 100%;
+}
+
+.electric-auth-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.electric-auth-title {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.electric-auth-subtitle {
+  color: #00d4ff;
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.electric-auth-description {
+  color: #e0f2ff;
+  font-size: 1rem;
+}
+
+.electric-auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.electric-auth-label {
+  color: #00d4ff;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.electric-auth-footer {
+  text-align: center;
+  margin-top: 2rem;
+}
+
+.electric-auth-footer-text {
+  color: #e0f2ff;
+}
+
+.electric-auth-link {
+  color: #00d4ff;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+/* Project Layout Styles */
+.electric-project-header-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.electric-project-button-small {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.electric-project-form-grid {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.electric-project-no-projects {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 3rem;
+}
+
+.electric-project-icon-large {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.electric-project-title {
+  color: #00d4ff;
+  margin-bottom: 1rem;
+}
+
+.electric-project-description {
+  color: #e0f2ff;
+  margin-bottom: 2rem;
+}
+
+.electric-project-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.electric-project-card-title {
+  color: #00d4ff;
+}
+
+.electric-project-delete-button {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.electric-project-card-text {
+  color: #e0f2ff;
+  margin-bottom: 1rem;
+}
+
+.electric-project-meta {
+  margin-bottom: 1rem;
+}
+
+.electric-project-date {
+  color: #a0d7ff;
+  font-size: 0.9rem;
+}
+
+.electric-project-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.electric-project-action-button {
+  font-size: 0.8rem;
+}
+
+/* Cable Calculator Result Values */
+.electric-result-value-large {
+  color: #00ff88;
+  font-size: 2rem;
+}
+
+.electric-result-value-normal {
+  color: #e0f2ff;
+}
+
+.electric-result-value-warning {
+  color: #ff0096;
+}
+
+/* Button Layout Styles */
+.electric-button-row {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+/* Section Title Styles */
+.electric-section-title {
+  color: #00d4ff;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.electric-section-subtitle {
+  color: #ff0096;
+  font-size: 1.5rem;
+}
+
+/* Card Content Styles */
+.electric-card-content-text {
+  color: #e0f2ff;
+  margin-bottom: 1rem;
+}
+
+.electric-card-list {
+  color: #a0d7ff;
+  padding-left: 1.5rem;
+}
+
+.electric-card-button-custom {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.electric-card-button-alt {
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  background: linear-gradient(135deg, #ff0096 0%, #00d4ff 100%);
+}
+
+/* Icon Styles */
+.electric-icon-large {
+  font-size: 3rem;
+}
+
+.electric-icon-title {
+  color: #00d4ff;
+  margin-bottom: 0.5rem;
+}
+
+.electric-icon-alt-title {
+  color: #ff0096;
+  margin-bottom: 0.5rem;
+}
+
+.electric-icon-text {
+  color: #e0f2ff;
+}
+
+/* Fault Type Cards */
+.electric-fault-normal {
+  color: #00ff88;
+}
+
+.electric-fault-lg {
+  color: #ffd93d;
+}
+
+.electric-fault-ll {
+  color: #ff9800;
+}
+
+.electric-fault-llg {
+  color: #ff5722;
+}
+
+.electric-fault-three-phase {
+  color: #f44336;
+}
+
+/* Feature Cards */
+.electric-feature-title {
+  color: #00d4ff;
+}
+
+/* Text Centering */
+.electric-text-center {
+  text-align: center;
+  margin-bottom: 2rem;
+}

@@ -3,7 +3,11 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import LoadForecasting from './pages/LoadForecasting';
+import LoadForecastingTraining from './pages/LoadForecastingTraining';
+import LoadForecastingPrediction from './pages/LoadForecastingPrediction';
 import FaultDetection from './pages/FaultDetection';
+import FaultDetectionTraining from './pages/FaultDetectionTraining';
+import FaultDetectionPrediction from './pages/FaultDetectionPrediction';
 import CableCalculator from './pages/CableCalculator';
 import MaintenanceAlerts from './pages/MaintenanceAlerts';
 import Projects from './pages/Projects';
@@ -24,7 +28,11 @@ const App: React.FC = () => {
               <Route index element={<Dashboard />} />
               <Route path="projects" element={<Projects />} />
               <Route path="load-forecasting" element={<LoadForecasting />} />
+              <Route path="load-forecasting-training" element={<LoadForecastingTraining />} />
+              <Route path="load-forecasting-prediction" element={<LoadForecastingPrediction />} />
               <Route path="fault-detection" element={<FaultDetection />} />
+              <Route path="fault-detection-training" element={<FaultDetectionTraining />} />
+              <Route path="fault-detection-prediction" element={<FaultDetectionPrediction />} />
               <Route path="cable-calculator" element={<CableCalculator />} />
               <Route path="maintenance-alerts" element={<MaintenanceAlerts />} />
             </Route>

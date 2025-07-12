@@ -15,6 +15,9 @@ export interface TrainingResult {
   training_time: number;
   metrics: Record<string, number>;
   model_id?: string;
+  forecast_data?: number[];
+  created_at?: string;
+  name?: string;
 }
 
 // Model Selection Component
@@ -265,7 +268,7 @@ export const DataUpload: React.FC<DataUploadProps> = ({
           type="file"
           accept={acceptedTypes}
           onChange={handleFileInput}
-          style={{ display: 'none' }}
+          className="upload-file-input"
           disabled={isProcessing}
           aria-label="Upload training data file"
         />

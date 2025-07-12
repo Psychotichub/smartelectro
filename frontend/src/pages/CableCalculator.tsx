@@ -101,224 +101,241 @@ const CableCalculator: React.FC = () => {
   };
 
   return (
-    <div className="module-page">
-      <div className="module-header">
+    <div className="electric-training-container">
+      <div className="electric-header">
         <h1>🔌 Cable Calculator</h1>
-        <p>Calculate optimal cable sizing based on voltage, load, and distance</p>
+        <p>Calculate optimal cable sizing with electrical precision</p>
       </div>
       
-      <div className="module-content">
-        <div className="calculator-container">
-          <div className="input-section">
-            <h2>Electrical Parameters</h2>
-            
-            {error && (
-              <div className="error-message">
-                {error}
-              </div>
-            )}
-            
-            <div className="input-grid">
-              <div className="input-group">
-                <label>Voltage (V)</label>
-                <input
-                  type="number"
-                  name="voltage"
-                  value={inputs.voltage}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 230, 400"
-                  required
-                />
-              </div>
-
-              <div className="input-group">
-                <label>Power (kW)</label>
-                <input
-                  type="number"
-                  name="power_kw"
-                  value={inputs.power_kw}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 5, 10, 15"
-                  step="0.1"
-                  required
-                />
-              </div>
-
-              <div className="input-group">
-                <label>Distance (m)</label>
-                <input
-                  type="number"
-                  name="distance"
-                  value={inputs.distance}
-                  onChange={handleInputChange}
-                  placeholder="e.g., 50, 100"
-                  required
-                />
-              </div>
-
-              <div className="input-group">
-                <label>Power Factor</label>
-                <input
-                  type="number"
-                  name="power_factor"
-                  value={inputs.power_factor}
-                  onChange={handleInputChange}
-                  placeholder="0.8"
-                  step="0.1"
-                  min="0.1"
-                  max="1"
-                />
-              </div>
-
-              <div className="input-group">
-                <label>Number of Phases</label>
-                <select name="phases" value={inputs.phases} onChange={handleInputChange} aria-label="Number of Phases">
-                  <option value="1">Single Phase</option>
-                  <option value="3">Three Phase</option>
-                </select>
-              </div>
-
-              <div className="input-group">
-                <label>Installation Method</label>
-                <select name="installation_method" value={inputs.installation_method} onChange={handleInputChange} aria-label="Installation Method">
-                  <option value="air">Air (overhead)</option>
-                  <option value="conduit">In Conduit</option>
-                  <option value="buried">Buried Underground</option>
-                  <option value="tray">Cable Tray</option>
-                </select>
-              </div>
-
-              <div className="input-group">
-                <label>Ambient Temperature (°C)</label>
-                <select name="ambient_temp" value={inputs.ambient_temp} onChange={handleInputChange} aria-label="Ambient Temperature">
-                  <option value="30">30°C</option>
-                  <option value="35">35°C</option>
-                  <option value="40">40°C</option>
-                  <option value="45">45°C</option>
-                  <option value="50">50°C</option>
-                </select>
-              </div>
-
-              <div className="input-group">
-                <label>Voltage Drop Limit (%)</label>
-                <select name="voltage_drop_limit" value={inputs.voltage_drop_limit} onChange={handleInputChange} aria-label="Voltage Drop Limit">
-                  <option value="3.0">3% (Lighting)</option>
-                  <option value="5.0">5% (Power)</option>
-                  <option value="2.5">2.5% (Critical)</option>
-                </select>
-              </div>
+      <div className="electric-content">
+        <div className="electric-control-section">
+          <h2>⚡ Electrical Parameters</h2>
+          
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+          
+          <div className="electric-config-grid">
+            <div className="electric-config-card">
+              <label className="electric-auth-label">Voltage (V)</label>
+              <input
+                type="number"
+                name="voltage"
+                value={inputs.voltage}
+                onChange={handleInputChange}
+                placeholder="e.g., 230, 400"
+                className="electric-input"
+                required
+              />
             </div>
 
-            <div className="button-group">
-              <button 
-                onClick={calculateCable} 
-                disabled={loading || !inputs.voltage || !inputs.power_kw || !inputs.distance}
-                className="calculate-btn"
-              >
-                {loading ? 'Calculating...' : 'Calculate Cable Size'}
-              </button>
-              <button onClick={resetCalculation} className="reset-btn">
-                Reset
-              </button>
+            <div className="electric-config-card">
+              <label className="electric-auth-label">Power (kW)</label>
+              <input
+                type="number"
+                name="power_kw"
+                value={inputs.power_kw}
+                onChange={handleInputChange}
+                placeholder="e.g., 5, 10, 15"
+                step="0.1"
+                className="electric-input"
+                required
+              />
+            </div>
+
+            <div className="electric-config-card">
+              <label className="electric-auth-label">Distance (m)</label>
+              <input
+                type="number"
+                name="distance"
+                value={inputs.distance}
+                onChange={handleInputChange}
+                placeholder="e.g., 50, 100"
+                className="electric-input"
+                required
+              />
+            </div>
+
+            <div className="electric-config-card">
+              <label className="electric-auth-label">Power Factor</label>
+              <input
+                type="number"
+                name="power_factor"
+                value={inputs.power_factor}
+                onChange={handleInputChange}
+                placeholder="0.8"
+                step="0.1"
+                min="0.1"
+                max="1"
+                className="electric-input"
+              />
+            </div>
+
+            <div className="electric-config-card">
+              <label className="electric-auth-label">Number of Phases</label>
+              <select name="phases" value={inputs.phases} onChange={handleInputChange} className="electric-select" aria-label="Number of Phases">
+                <option value="1">Single Phase</option>
+                <option value="3">Three Phase</option>
+              </select>
+            </div>
+
+            <div className="electric-config-card">
+              <label className="electric-auth-label">Installation Method</label>
+              <select name="installation_method" value={inputs.installation_method} onChange={handleInputChange} className="electric-select" aria-label="Installation Method">
+                <option value="air">Air (overhead)</option>
+                <option value="conduit">In Conduit</option>
+                <option value="buried">Buried Underground</option>
+                <option value="tray">Cable Tray</option>
+              </select>
+            </div>
+
+            <div className="electric-config-card">
+              <label className="electric-auth-label">Ambient Temperature (°C)</label>
+              <select name="ambient_temp" value={inputs.ambient_temp} onChange={handleInputChange} className="electric-select" aria-label="Ambient Temperature">
+                <option value="30">30°C</option>
+                <option value="35">35°C</option>
+                <option value="40">40°C</option>
+                <option value="45">45°C</option>
+                <option value="50">50°C</option>
+              </select>
+            </div>
+
+            <div className="electric-config-card">
+              <label className="electric-auth-label">Voltage Drop Limit (%)</label>
+              <input
+                type="number"
+                name="voltage_drop_limit"
+                value={inputs.voltage_drop_limit}
+                onChange={handleInputChange}
+                placeholder="5.0"
+                step="0.1"
+                className="electric-input"
+              />
             </div>
           </div>
 
-          {result && (
-            <div className="results-section">
-              <h2>Calculation Results</h2>
-              
-              <div className="result-grid">
-                <div className="result-card">
-                  <h3>Recommended Cable Size</h3>
-                  <div className="result-value">{result.recommended_cable_size}</div>
-                </div>
+          <div className="electric-button-row">
+            <button
+              onClick={calculateCable}
+              disabled={loading}
+              className="electric-train-button"
+            >
+              {loading ? 'Calculating...' : '⚡ Calculate Cable'}
+            </button>
+            <button
+              onClick={resetCalculation}
+              className="reset-btn"
+            >
+              🔄 Reset
+            </button>
+          </div>
+        </div>
 
-                <div className="result-card">
-                  <h3>Current</h3>
-                  <div className="result-value">{result.current_amperes.toFixed(1)}A</div>
-                </div>
-
-                <div className="result-card">
-                  <h3>Voltage Drop</h3>
-                  <div className="result-value">
-                    {result.details.voltage_drop_volts.toFixed(2)}V 
-                    <span className="percentage">({result.voltage_drop_percentage.toFixed(2)}%)</span>
-                  </div>
-                </div>
-
-                <div className="result-card">
-                  <h3>Power Loss</h3>
-                  <div className="result-value">{result.power_loss_watts.toFixed(2)}W</div>
-                </div>
-
-                <div className="result-card">
-                  <h3>Cable Capacity</h3>
-                  <div className="result-value">{result.details.cable_current_capacity}A</div>
-                </div>
-
-                <div className={`result-card compliance ${result.is_safe ? 'compliant' : 'non-compliant'}`}>
-                  <h3>Safety Status</h3>
-                  <div className="result-value">
-                    {result.is_safe ? '✅ Safe' : '❌ Unsafe'}
-                  </div>
-                  <small>
-                    Safety Factor: {result.safety_factor.toFixed(2)}
-                  </small>
+        {result && (
+          <div className="electric-control-section">
+            <h2>🔬 Calculation Results</h2>
+            <div className="electric-config-grid">
+              <div className="electric-model-card">
+                <h3 className="electric-stat-value">Recommended Cable Size</h3>
+                <div className="electric-result-value-large">
+                  {result.recommended_cable_size}
                 </div>
               </div>
 
-              <div className="detailed-results">
-                <h3>Detailed Analysis</h3>
-                <div className="details-grid">
-                  <div className="detail-item">
-                    <span className="label">Calculated Current:</span>
-                    <span className="value">{result.details.calculated_current.toFixed(2)}A</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Derated Current:</span>
-                    <span className="value">{result.details.derated_current.toFixed(2)}A</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Installation Factor:</span>
-                    <span className="value">{result.details.installation_factor.toFixed(2)}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Temperature Factor:</span>
-                    <span className="value">{result.details.temperature_factor.toFixed(2)}</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Cable Resistance:</span>
-                    <span className="value">{result.details.cable_resistance.toFixed(4)}Ω/km</span>
-                  </div>
-                  <div className="detail-item">
-                    <span className="label">Total Derating:</span>
-                    <span className="value">{result.details.total_derating.toFixed(2)}</span>
-                  </div>
+              <div className="electric-model-card">
+                <h3 className="electric-stat-value">Current</h3>
+                <div className="electric-result-value-normal">
+                  {result.current_amperes.toFixed(2)} A
                 </div>
               </div>
 
-              <div className="recommendations">
-                <h3>Recommendations</h3>
-                <ul>
-                  {result.voltage_drop_percentage > 3 && (
-                    <li>⚠️ Voltage drop is {result.voltage_drop_percentage.toFixed(2)}% - consider larger cable if critical</li>
-                  )}
-                  {result.power_loss_watts > 100 && (
-                    <li>💡 Power loss is {result.power_loss_watts.toFixed(0)}W - larger cable will improve efficiency</li>
-                  )}
-                  {result.safety_factor < 1.5 && (
-                    <li>⚡ Safety factor is {result.safety_factor.toFixed(2)} - consider next larger cable size</li>
-                  )}
-                  {result.is_safe && result.voltage_drop_percentage <= 3 && (
-                    <li>✅ Excellent selection - meets all safety and efficiency requirements</li>
-                  )}
-                  <li>🔧 Ensure proper installation according to local electrical codes</li>
-                  <li>📋 Consider future load growth and environmental factors</li>
-                </ul>
+              <div className="electric-model-card">
+                <h3 className="electric-stat-value">Voltage Drop</h3>
+                <div className={result.voltage_drop_percentage > 5 ? "electric-result-value-warning" : "electric-result-value-large"}>
+                  {result.voltage_drop_percentage.toFixed(2)}%
+                </div>
+              </div>
+
+              <div className="electric-model-card">
+                <h3 className="electric-stat-value">Power Loss</h3>
+                <div className="electric-result-value-normal">
+                  {result.power_loss_watts.toFixed(2)} W
+                </div>
+              </div>
+
+              <div className="electric-model-card">
+                <h3 className="electric-stat-value">Safety Status</h3>
+                <div className={`electric-status ${result.is_safe ? 'normal' : 'critical'}`}>
+                  {result.is_safe ? 'SAFE' : 'UNSAFE'}
+                </div>
+              </div>
+
+              <div className="electric-model-card">
+                <h3 className="electric-stat-value">Safety Factor</h3>
+                <div className="electric-result-value-normal">
+                  {result.safety_factor.toFixed(2)}
+                </div>
               </div>
             </div>
-          )}
-        </div>
+
+            <div className="electric-data-preview">
+              <h3>📊 Detailed Analysis</h3>
+              <table className="electric-preview-table">
+                <thead>
+                  <tr>
+                    <th>Parameter</th>
+                    <th>Value</th>
+                    <th>Unit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Calculated Current</td>
+                    <td>{result.details.calculated_current.toFixed(2)}</td>
+                    <td>A</td>
+                  </tr>
+                  <tr>
+                    <td>Derated Current</td>
+                    <td>{result.details.derated_current.toFixed(2)}</td>
+                    <td>A</td>
+                  </tr>
+                  <tr>
+                    <td>Cable Current Capacity</td>
+                    <td>{result.details.cable_current_capacity.toFixed(2)}</td>
+                    <td>A</td>
+                  </tr>
+                  <tr>
+                    <td>Installation Factor</td>
+                    <td>{result.details.installation_factor.toFixed(2)}</td>
+                    <td>-</td>
+                  </tr>
+                  <tr>
+                    <td>Temperature Factor</td>
+                    <td>{result.details.temperature_factor.toFixed(2)}</td>
+                    <td>-</td>
+                  </tr>
+                  <tr>
+                    <td>Total Derating</td>
+                    <td>{result.details.total_derating.toFixed(2)}</td>
+                    <td>-</td>
+                  </tr>
+                  <tr>
+                    <td>Voltage Drop</td>
+                    <td>{result.details.voltage_drop_volts.toFixed(2)}</td>
+                    <td>V</td>
+                  </tr>
+                  <tr>
+                    <td>Cable Resistance</td>
+                    <td>{result.details.cable_resistance.toFixed(4)}</td>
+                    <td>Ω/km</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

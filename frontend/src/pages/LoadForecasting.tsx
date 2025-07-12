@@ -1,528 +1,121 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_ENDPOINTS } from '../config/api';
-import { useAuth } from '../contexts/AuthContext';
-import {
-  ModelSelector,
-  TrainingProgressMonitor,
-  TrainingConfig,
-  TrainingResults,
-  DataUpload,
-  ForecastHorizonSelector,
-  TrainingProgress,
-  TrainingResult
-} from '../components/TrainingComponents';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import '../styles/pages/Modules.css';
 
-interface LoadData {
-  timestamp: string;
-  load: number;
-  temperature?: number;
-  humidity?: number;
-}
-
-interface ForecastResult {
-  timestamp: string;
-  historical: number | null;
-  predicted: number;
-  confidence: number;
-}
-
-interface Project {
-  id: number;
-  name: string;
-  description: string;
-}
-
 const LoadForecasting: React.FC = () => {
-  const { user } = useAuth();
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [selectedProject, setSelectedProject] = useState<number | null>(null);
-  const [selectedModel, setSelectedModel] = useState<string>('lstm');
-  const [forecastHorizon, setForecastHorizon] = useState<number>(24);
-  const [trainedModels, setTrainedModels] = useState<TrainingResult[]>([]);
-  const [trainingProgress, setTrainingProgress] = useState<TrainingProgress>({
-    status: 'idle',
-    progress: 0,
-    message: ''
-  });
-  const [uploadedData, setUploadedData] = useState<LoadData[]>([]);
-  const [forecastResults, setForecastResults] = useState<ForecastResult[]>([]);
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  // Model options
-  const modelOptions = [
-    {
-      value: 'lstm',
-      label: 'LSTM',
-      description: 'Long Short-Term Memory neural network for time series forecasting. Best for complex patterns and long-term dependencies.'
-    },
-    {
-      value: 'random_forest',
-      label: 'Random Forest',
-      description: 'Ensemble method using multiple decision trees. Good for capturing non-linear relationships and feature importance.'
-    }
-  ];
-
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  useEffect(() => {
-    if (selectedProject) {
-      fetchTrainedModels();
-    }
-  }, [selectedProject]);
-
-  const fetchProjects = async () => {
-    try {
-      const response = await axios.get(API_ENDPOINTS.projects);
-      setProjects(response.data);
-      if (response.data.length > 0) {
-        setSelectedProject(response.data[0].id);
-      }
-    } catch (error: any) {
-      console.error('Error fetching projects:', error);
-      setError('Failed to load projects. Please try again.');
-    }
-  };
-
-  const fetchTrainedModels = async () => {
-    if (!selectedProject) return;
-    
-    try {
-      const response = await axios.get(`${API_ENDPOINTS.loadForecasting.getForecasts}/${selectedProject}`);
-      
-      // Transform the API response to match the TrainingResult interface
-      const models: TrainingResult[] = response.data.map((forecast: any) => ({
-        model_id: forecast.id.toString(),
-        model_type: forecast.model_type,
-        accuracy: forecast.accuracy_score,
-        training_time: 0, // API doesn't provide training time, use 0
-        metrics: {
-          'R² Score': forecast.accuracy_score,
-          'MAE': Math.random() * 10 + 5, // Placeholder values since API doesn't provide detailed metrics
-          'RMSE': Math.random() * 15 + 8
-        },
-        created_at: new Date(forecast.created_at).toLocaleString(),
-        forecast_data: forecast.forecast_data,
-        name: forecast.name
-      }));
-      
-      setTrainedModels(models);
-    } catch (error: any) {
-      console.error('Error fetching trained models:', error);
-      if (error.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
-      } else {
-        setError('Failed to load trained models. Please try again.');
-      }
-    }
-  };
-
-  const handleFileUpload = async (file: File) => {
-    setError('');
-    setLoading(true);
-    
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      const response = await axios.post(API_ENDPOINTS.loadForecasting.uploadData, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          ...axios.defaults.headers.common, // Preserve existing headers including Authorization
-        },
-      });
-      
-      // Convert the response data to LoadData format
-      const timestamps = response.data.data.timestamps;
-      const loads = response.data.data.loads;
-      
-      const loadData: LoadData[] = timestamps.map((timestamp: string, index: number) => ({
-        timestamp,
-        load: loads[index]
-      }));
-      
-      setUploadedData(loadData);
-      setError('');
-    } catch (error: any) {
-      console.error('Error uploading data:', error);
-      if (error.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
-      } else if (error.response?.status === 400) {
-        setError(`Invalid data format: ${error.response.data.detail}`);
-      } else {
-        setError('Failed to upload data. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleUseSampleData = async () => {
-    setError('');
-    setLoading(true);
-    
-    try {
-      const response = await axios.post(API_ENDPOINTS.loadForecasting.generateSample, {
-        start_date: '2023-01-01',
-        end_date: '2023-04-01',
-        freq: '1H'
-      });
-      
-      // Convert the response data to LoadData format
-      const timestamps = response.data.data.timestamps;
-      const loads = response.data.data.loads;
-      
-      const loadData: LoadData[] = timestamps.map((timestamp: string, index: number) => ({
-        timestamp,
-        load: loads[index]
-      }));
-      
-      setUploadedData(loadData);
-      setError('');
-    } catch (error: any) {
-      console.error('Error generating sample data:', error);
-      setError('Failed to generate sample data. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTrainModel = async () => {
-    if (!selectedProject) {
-      setError('Please select a project first.');
-      return;
-    }
-
-    setError('');
-    setTrainingProgress({
-      status: 'training',
-      progress: 0,
-      message: 'Initializing model training...'
-    });
-
-    try {
-      // Simulate training progress
-      const progressInterval = setInterval(() => {
-        setTrainingProgress(prev => ({
-          ...prev,
-          progress: Math.min(prev.progress + Math.random() * 15, 90),
-          message: prev.progress < 30 ? 'Preparing data...' :
-                   prev.progress < 60 ? 'Training model...' :
-                   'Evaluating performance...'
-        }));
-      }, 500);
-
-      console.log('Sending training request:', {
-        project_id: selectedProject,
-        name: `${selectedModel.toUpperCase()} Model - ${new Date().toLocaleString()}`,
-        model_type: selectedModel,
-        forecast_hours: forecastHorizon,
-        use_sample_data: uploadedData.length === 0,
-        uploaded_data: uploadedData.length > 0 ? uploadedData : null
-      });
-
-      // Create a Windows-safe timestamp
-      const now = new Date();
-      const timestamp = now.toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, -5);
-      
-      const response = await axios.post(API_ENDPOINTS.loadForecasting.train, {
-        project_id: selectedProject,
-        name: `${selectedModel.toUpperCase()} Model ${timestamp}`,
-        model_type: selectedModel,
-        forecast_hours: forecastHorizon,
-        use_sample_data: uploadedData.length === 0,
-        uploaded_data: uploadedData.length > 0 ? uploadedData : null
-      });
-
-      clearInterval(progressInterval);
-      
-      setTrainingProgress({
-        status: 'completed',
-        progress: 100,
-        message: 'Model training completed successfully!'
-      });
-
-      // Refresh the trained models list from the database
-      await fetchTrainedModels();
-      
-      // Reset progress after 2 seconds
-      setTimeout(() => {
-        setTrainingProgress({
-          status: 'idle',
-          progress: 0,
-          message: ''
-        });
-      }, 2000);
-
-    } catch (error: any) {
-      console.error('Error training model:', error);
-      
-      let errorMessage = 'Unknown error occurred';
-      
-      if (error.response) {
-        // Server responded with error status
-        const status = error.response.status;
-        const detail = error.response.data?.detail || error.response.data?.message || 'Server error';
-        
-        switch (status) {
-          case 400:
-            errorMessage = `Invalid request: ${detail}`;
-            break;
-          case 401:
-            errorMessage = 'Authentication failed. Please log in again.';
-            break;
-          case 403:
-            errorMessage = 'You do not have permission to perform this action.';
-            break;
-          case 404:
-            errorMessage = 'Project not found. Please select a valid project.';
-            break;
-          case 500:
-            errorMessage = `Server error: ${detail}. Please check if the backend is running.`;
-            break;
-          default:
-            errorMessage = `Error ${status}: ${detail}`;
-        }
-      } else if (error.request) {
-        // Request was made but no response received
-        errorMessage = 'Unable to connect to server. Please check if the backend is running on port 8000.';
-      } else {
-        // Error in setting up request
-        errorMessage = `Request error: ${error.message}`;
-      }
-      
-      setTrainingProgress({
-        status: 'error',
-        progress: 0,
-        message: 'Training failed',
-        error: errorMessage
-      });
-      
-      // Also show error in main error area
-      setError(errorMessage);
-      
-      // Reset progress after 5 seconds
-      setTimeout(() => {
-        setTrainingProgress({
-          status: 'idle',
-          progress: 0,
-          message: ''
-        });
-      }, 5000);
-    }
-  };
-
-  const handleResetTraining = () => {
-    setUploadedData([]);
-    setSelectedModel('lstm');
-    setForecastHorizon(24);
-    setTrainedModels([]);
-    setForecastResults([]);
-    setError('');
-    setTrainingProgress({
-      status: 'idle',
-      progress: 0,
-      message: ''
-    });
-  };
-
-  const handleSelectModel = (modelId: string) => {
-    // Here you would typically load the trained model and use it for predictions
-    console.log('Selected model:', modelId);
-    setError('Model selected successfully! You can now use it for forecasting.');
-  };
-
-  const handleDeleteModel = async (modelId: string) => {
-    if (!selectedProject) return;
-    
-    try {
-      await axios.delete(`${API_ENDPOINTS.loadForecasting.getForecasts}/${selectedProject}/${modelId}`);
-      
-      // Remove from local state
-      setTrainedModels(prev => prev.filter(model => model.model_id !== modelId));
-      
-      setError('Model deleted successfully.');
-    } catch (error: any) {
-      console.error('Error deleting model:', error);
-      if (error.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
-      } else {
-        setError('Failed to delete model. Please try again.');
-      }
-    }
-  };
-
-  const isTrainingDisabled = !selectedProject;
-
   return (
-    <div className="module-page">
-      <div className="module-header">
+    <div className="electric-training-container">
+      <div className="electric-header">
         <h1>📊 Load Forecasting</h1>
-        <p>Train AI models to predict future power consumption using LSTM and Random Forest</p>
+        <p>AI-powered electrical load prediction with neural precision</p>
       </div>
 
-      <div className="module-content">
-        {error && (
-          <div className="error-message">
-            {error}
-          </div>
-        )}
+      <div className="electric-content">
+        <div className="electric-control-section">
+          <h2>🔄 Enhanced Electrical Workflows</h2>
+          <p className="electric-card-content-text electric-text-center">
+            Load Forecasting is now organized into two specialized electrical workflows:
+          </p>
+          
+          <div className="electric-config-grid">
+            <div className="electric-model-card">
+              <div className="card-header">
+                <h3 className="electric-section-title">📚 Training Workflow</h3>
+              </div>
+              <div className="card-content">
+                <p className="electric-card-content-text">Train your AI models with historical load data:</p>
+                <ul className="electric-card-list">
+                  <li>Upload or generate sample electrical data</li>
+                  <li>Configure LSTM & Random Forest parameters</li>
+                  <li>Monitor training progress in real-time</li>
+                  <li>Manage trained forecasting models</li>
+                </ul>
+                <Link to="/load-forecasting-training" className="electric-train-button electric-card-button-custom">
+                  ⚡ Go to Training →
+                </Link>
+              </div>
+            </div>
 
-        {/* Project Selection */}
-        <div className="project-selection">
-          <h2>Select Project</h2>
-          <select
-            value={selectedProject || ''}
-            onChange={(e) => setSelectedProject(parseInt(e.target.value))}
-            disabled={loading}
-            aria-label="Select project for model training"
-          >
-            <option value="">Choose a project...</option>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.name}
-              </option>
-            ))}
-          </select>
-          {!selectedProject && (
-            <p className="selection-hint">Please select a project to continue with model training.</p>
-          )}
+            <div className="electric-model-card">
+              <div className="card-header">
+                <h3 className="electric-section-subtitle">🔮 Prediction Workflow</h3>
+              </div>
+              <div className="card-content">
+                <p className="electric-card-content-text">Use trained models to predict future electrical loads:</p>
+                <ul className="electric-card-list">
+                  <li>Select from trained AI models</li>
+                  <li>Generate intelligent load forecasts</li>
+                  <li>Analyze predictions with electrical insights</li>
+                  <li>Export forecast results for analysis</li>
+                </ul>
+                <Link to="/load-forecasting-prediction" className="electric-train-button electric-card-button-alt">
+                  🔬 Go to Prediction →
+                </Link>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Data Upload Section */}
-        <DataUpload
-          onFileUpload={handleFileUpload}
-          onUseSampleData={handleUseSampleData}
-          acceptedTypes=".csv"
-          sampleDataDescription="3 months of hourly power consumption data with realistic patterns"
-          isProcessing={loading}
-        />
+        <div className="electric-control-section">
+          <h2>⚡ Quick Access</h2>
+          <div className="electric-config-grid">
+            <Link to="/load-forecasting-training" className="electric-model-card electric-module-link">
+              <span className="electric-icon-large">📚</span>
+              <div>
+                <h4 className="electric-icon-title">Start Training</h4>
+                <p className="electric-icon-text">Train new neural networks with your electrical data</p>
+              </div>
+            </Link>
+            <Link to="/load-forecasting-prediction" className="electric-model-card electric-module-link">
+              <span className="electric-icon-large">🔮</span>
+              <div>
+                <h4 className="electric-icon-alt-title">Make Predictions</h4>
+                <p className="electric-icon-text">Use existing models for electrical load forecasting</p>
+              </div>
+            </Link>
+          </div>
+        </div>
 
-        {/* Data Preview */}
-        {uploadedData.length > 0 && (
-          <div className="data-preview">
-            <h3>Data Preview ({uploadedData.length} records)</h3>
-            <div className="preview-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Timestamp</th>
-                    <th>Load (kW)</th>
-                    {uploadedData[0].temperature && <th>Temperature (°C)</th>}
-                    {uploadedData[0].humidity && <th>Humidity (%)</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {uploadedData.slice(0, 5).map((row, index) => (
-                    <tr key={index}>
-                      <td>{row.timestamp}</td>
-                      <td>{row.load}</td>
-                      {row.temperature && <td>{row.temperature}</td>}
-                      {row.humidity && <td>{row.humidity}</td>}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {uploadedData.length > 5 && (
-                <p className="preview-note">... and {uploadedData.length - 5} more records</p>
-              )}
+        <div className="electric-control-section">
+          <h3 className="electric-section-title">🔬 Advanced Forecasting Features</h3>
+          <div className="electric-config-grid">
+            <div className="electric-model-card">
+              <h4 className="electric-feature-title">🧠 LSTM Neural Networks</h4>
+              <p className="electric-icon-text">Long Short-Term Memory networks for electrical time series</p>
+            </div>
+            <div className="electric-model-card">
+              <h4 className="electric-feature-title">🌲 Random Forest</h4>
+              <p className="electric-icon-text">Ensemble learning for robust electrical load predictions</p>
+            </div>
+            <div className="electric-model-card">
+              <h4 className="electric-feature-title">📈 Time Series Analysis</h4>
+              <p className="electric-icon-text">Advanced time series analysis for electrical patterns</p>
+            </div>
+            <div className="electric-model-card">
+              <h4 className="electric-feature-title">⚡ Real-time Forecasting</h4>
+              <p className="electric-icon-text">Lightning-fast predictions for electrical demand</p>
             </div>
           </div>
-        )}
+        </div>
 
-        {/* Training Configuration */}
-        <TrainingConfig
-          title="Model Training Configuration"
-          onTrain={handleTrainModel}
-          onReset={handleResetTraining}
-          isTraining={trainingProgress.status === 'training'}
-          disabled={isTrainingDisabled}
-        >
-          <ModelSelector
-            models={modelOptions}
-            selectedModel={selectedModel}
-            onModelChange={setSelectedModel}
-            disabled={trainingProgress.status === 'training'}
-          />
-          
-          <ForecastHorizonSelector
-            value={forecastHorizon}
-            onChange={setForecastHorizon}
-            disabled={trainingProgress.status === 'training'}
-          />
-          
-          {isTrainingDisabled && (
-            <div className="training-requirements">
-              <p>⚠️ Requirements for training:</p>
-              <ul>
-                <li>Select a project</li>
-              </ul>
-              <p>💡 You can upload your own data or use generated sample data for training.</p>
+        <div className="electric-control-section">
+          <h3 className="electric-section-title">⚡ Enhanced Electrical Features</h3>
+          <div className="electric-config-grid">
+            <div className="electric-model-card">
+              <h4 className="electric-feature-title">🎯 Focused Workflows</h4>
+              <p className="electric-icon-text">Dedicated interfaces for electrical training and prediction</p>
             </div>
-          )}
-        </TrainingConfig>
-
-        {/* Training Progress */}
-        <TrainingProgressMonitor
-          progress={trainingProgress}
-          onCancel={() => {
-            setTrainingProgress({
-              status: 'idle',
-              progress: 0,
-              message: ''
-            });
-          }}
-        />
-
-        {/* Training Results */}
-        <TrainingResults
-          results={trainedModels}
-          onSelectModel={handleSelectModel}
-          onDeleteModel={handleDeleteModel}
-        />
-
-        {/* Quick Guide */}
-        <div className="quick-guide">
-          <h3>Quick Guide</h3>
-          <div className="guide-steps">
-            <div className="step">
-              <span className="step-number">1</span>
-              <div className="step-content">
-                <h4>Select Project</h4>
-                <p>Choose the project where you want to train the forecasting model.</p>
-              </div>
+            <div className="electric-model-card">
+              <h4 className="electric-feature-title">⚡ Improved Performance</h4>
+              <p className="electric-icon-text">Lightning-fast loading and electrical user experience</p>
             </div>
-            <div className="step">
-              <span className="step-number">2</span>
-              <div className="step-content">
-                <h4>Upload Data</h4>
-                <p>Upload your CSV file with timestamp and load columns, or use sample data.</p>
-              </div>
+            <div className="electric-model-card">
+              <h4 className="electric-feature-title">📈 Smart Organization</h4>
+              <p className="electric-icon-text">Intelligent separation of model management and electrical usage</p>
             </div>
-            <div className="step">
-              <span className="step-number">3</span>
-              <div className="step-content">
-                <h4>Configure Training</h4>
-                <p>Select model type (LSTM or Random Forest) and forecast horizon.</p>
-              </div>
-            </div>
-            <div className="step">
-              <span className="step-number">4</span>
-              <div className="step-content">
-                <h4>Train Model</h4>
-                <p>Click "Train Model" and monitor the training progress.</p>
-              </div>
-            </div>
-            <div className="step">
-              <span className="step-number">5</span>
-              <div className="step-content">
-                <h4>Use Model</h4>
-                <p>Select the trained model to use for future load forecasting.</p>
-              </div>
+            <div className="electric-model-card">
+              <h4 className="electric-feature-title">🔧 Advanced Tools</h4>
+              <p className="electric-icon-text">Sophisticated tools for electrical load forecasting</p>
             </div>
           </div>
         </div>

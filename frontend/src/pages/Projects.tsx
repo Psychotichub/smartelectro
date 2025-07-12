@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
-import '../styles/pages/Projects.css';
+import '../styles/pages/Modules.css';
 
 interface Project {
   id: number;
@@ -100,111 +100,137 @@ const Projects: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="projects-page">
-        <div className="loading-spinner"></div>
+      <div className="electric-training-container">
+        <div className="electric-content">
+          <div className="electric-control-section">
+            <div className="loading-spinner"></div>
+            <p className="electric-loading-text">Loading projects...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="projects-page">
-      <div className="projects-header">
+    <div className="electric-training-container">
+      <div className="electric-header">
         <h1>📁 Projects</h1>
-        <p>Manage your electrical engineering projects</p>
-        <button 
-          className="create-project-btn"
-          onClick={() => setShowCreateForm(!showCreateForm)}
-        >
-          {showCreateForm ? 'Cancel' : '+ Create New Project'}
-        </button>
+        <p>Manage your electrical engineering projects with precision</p>
       </div>
 
-      {error && (
-        <div className="error-message">
-          {error}
-        </div>
-      )}
+      <div className="electric-content">
+        <div className="electric-control-section">
+          <div className="electric-project-header-controls">
+            <h2>⚡ Project Management</h2>
+            <button 
+              className="electric-train-button electric-project-button-small"
+              onClick={() => setShowCreateForm(!showCreateForm)}
+            >
+              {showCreateForm ? '❌ Cancel' : '+ Create New Project'}
+            </button>
+          </div>
 
-      {showCreateForm && (
-        <div className="create-project-form">
-          <h2>Create New Project</h2>
-          <form onSubmit={handleCreateProject}>
-            <div className="form-group">
-              <label>Project Name</label>
-              <input
-                type="text"
-                name="name"
-                value={newProject.name}
-                onChange={handleInputChange}
-                placeholder="Enter project name"
-                required
-              />
+          {error && (
+            <div className="error-message">
+              {error}
             </div>
-            <div className="form-group">
-              <label>Description</label>
-              <textarea
-                name="description"
-                value={newProject.description}
-                onChange={handleInputChange}
-                placeholder="Enter project description"
-                rows={4}
-                required
-              />
-            </div>
-            <div className="form-actions">
-              <button type="submit" className="submit-btn">Create Project</button>
-              <button type="button" className="cancel-btn" onClick={() => setShowCreateForm(false)}>
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+          )}
 
-      <div className="projects-section">
-        <div className="projects-grid">
-          {projects.length === 0 ? (
-            <div className="no-projects">
-              <div className="no-projects-icon">📁</div>
-              <h3>No projects yet</h3>
-              <p>Create your first project to get started with SmartElectro AI</p>
-              <button 
-                className="create-button"
-                onClick={() => setShowCreateForm(true)}
-              >
-                Create Your First Project
-              </button>
-            </div>
-          ) : (
-            projects.map((project) => (
-              <div key={project.id} className="project-card">
-                <div className="project-header">
-                  <h3>{project.name}</h3>
-                  <button 
-                    className="delete-button"
-                    onClick={() => handleDeleteProject(project.id)}
-                  >
-                    🗑️
+          {showCreateForm && (
+            <div className="electric-control-section">
+              <h3 className="electric-section-title">⚡ Create New Project</h3>
+              <form onSubmit={handleCreateProject}>
+                <div className="electric-config-grid">
+                  <div className="electric-config-card">
+                    <label className="electric-auth-label">Project Name</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={newProject.name}
+                      onChange={handleInputChange}
+                      placeholder="Enter project name"
+                      className="electric-input"
+                      required
+                    />
+                  </div>
+                  <div className="electric-config-card">
+                    <label className="electric-auth-label">Description</label>
+                    <textarea
+                      name="description"
+                      value={newProject.description}
+                      onChange={handleInputChange}
+                      placeholder="Enter project description"
+                      rows={4}
+                      className="electric-input"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="electric-project-form-grid">
+                  <button type="submit" className="electric-train-button">
+                    ⚡ Create Project
+                  </button>
+                  <button type="button" className="reset-btn" onClick={() => setShowCreateForm(false)}>
+                    Cancel
                   </button>
                 </div>
-                <p className="project-description">{project.description}</p>
-                <div className="project-meta">
-                  <span className="project-date">
-                    Created: {new Date(project.created_at).toLocaleDateString()}
-                  </span>
-                  <span className="project-date">
-                    Updated: {new Date(project.updated_at).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="project-actions">
-                  <button className="action-btn">📊 Load Forecasting</button>
-                  <button className="action-btn">⚠️ Fault Detection</button>
-                  <button className="action-btn">🔌 Cable Calculator</button>
-                  <button className="action-btn">🔧 Maintenance</button>
-                </div>
-              </div>
-            ))
+              </form>
+            </div>
           )}
+
+          <div className="electric-control-section">
+            <h3 className="electric-section-title">🔬 Your Projects</h3>
+            <div className="electric-config-grid">
+              {projects.length === 0 ? (
+                <div className="electric-model-card electric-project-no-projects">
+                  <div className="electric-project-icon-large">📁</div>
+                  <h3 className="electric-project-title">No projects yet</h3>
+                  <p className="electric-project-description">Create your first project to get started with SmartElectro AI</p>
+                  <button 
+                    className="electric-train-button electric-project-button-small"
+                    onClick={() => setShowCreateForm(true)}
+                  >
+                    ⚡ Create Your First Project
+                  </button>
+                </div>
+              ) : (
+                projects.map((project) => (
+                  <div key={project.id} className="electric-model-card">
+                    <div className="electric-project-card-header">
+                      <h3 className="electric-project-card-title">{project.name}</h3>
+                      <button 
+                        className="electric-status critical electric-project-delete-button"
+                        onClick={() => handleDeleteProject(project.id)}
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                    <p className="electric-project-card-text">{project.description}</p>
+                    <div className="electric-project-meta">
+                      <span className="electric-project-date">
+                        Created: {new Date(project.created_at).toLocaleDateString()}
+                      </span>
+                      <br />
+                      <span className="electric-project-date">
+                        Updated: {new Date(project.updated_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="electric-project-actions">
+                      <button className="electric-status normal electric-project-action-button">
+                        📊 Load Forecasting
+                      </button>
+                      <button className="electric-status normal electric-project-action-button">
+                        ⚠️ Fault Detection
+                      </button>
+                      <button className="electric-status normal electric-project-action-button">
+                        🔧 Maintenance
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -18,11 +18,13 @@ export const API_ENDPOINTS = {
     generateSample: `${API_BASE_URL}/api/load-forecasting/generate-sample-data`,
     uploadData: `${API_BASE_URL}/api/load-forecasting/upload-data`,
     getForecasts: `${API_BASE_URL}/api/load-forecasting/forecasts`,
+    getModels: `${API_BASE_URL}/api/load-forecasting/models`,
   },
   faultDetection: {
     trainModel: `${API_BASE_URL}/api/fault-detection/train-model`,
     classifyFault: `${API_BASE_URL}/api/fault-detection/classify`,
     uploadData: `${API_BASE_URL}/api/fault-detection/upload-data`,
+    getDetections: `${API_BASE_URL}/api/fault-detection/detections`,
     getModels: `${API_BASE_URL}/api/fault-detection/models`,
   },
   maintenanceAlerts: {

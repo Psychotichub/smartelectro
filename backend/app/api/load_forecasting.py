@@ -309,6 +309,55 @@ async def train_model_with_data(
         print(error_msg)  # Log to console
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/models/{project_id}")
+async def get_trained_models(
+    project_id: int,
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get all trained models for a project"""
+    # Verify project exists and belongs to user
+    project = db.query(Project).filter(
+        Project.id == project_id,
+        Project.owner_id == current_user.id
+    ).first()
+    
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Get trained models from filesystem
+    import os
+    import glob
+    import json
+    
+    models_dir = load_service.models_dir
+    model_files = glob.glob(os.path.join(models_dir, f"*_{current_user.id}_*_metadata.json"))
+    
+    trained_models = []
+    for metadata_file in model_files:
+        try:
+            with open(metadata_file, 'r') as f:
+                metadata = json.load(f)
+            
+            # Extract model name from filename
+            base_name = os.path.basename(metadata_file).replace('_metadata.json', '')
+            model_name = base_name.rsplit('_', 2)[0]  # Remove user_id and timestamp
+            
+            trained_models.append({
+                "model_id": base_name,
+                "model_name": model_name,
+                "model_type": metadata.get('model_type', 'unknown'),
+                "accuracy_score": metadata.get('r2_score', 0),
+                "mse": metadata.get('mse', 0),
+                "created_at": metadata.get('created_at', ''),
+                "training_time": metadata.get('training_time', 0)
+            })
+        except Exception as e:
+            print(f"Error reading metadata file {metadata_file}: {e}")
+            continue
+    
+    return sorted(trained_models, key=lambda x: x['created_at'], reverse=True)
+
 @router.get("/forecasts/{project_id}")
 async def get_forecasts(
     project_id: int,
