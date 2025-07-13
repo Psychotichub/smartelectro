@@ -257,8 +257,13 @@ const LoadForecastingTraining: React.FC = () => {
   };
 
   const handleDeleteModel = async (modelId: string) => {
+    if (!selectedProject) {
+      setError('Please select a project first.');
+      return;
+    }
+    
     try {
-      await axios.delete(`${API_ENDPOINTS.loadForecasting.getForecasts}/${modelId}`);
+      await axios.delete(`${API_ENDPOINTS.loadForecasting.deleteModel}/${selectedProject}/${modelId}`);
       await fetchTrainedModels();
       setError('Model deleted successfully.');
     } catch (error: any) {

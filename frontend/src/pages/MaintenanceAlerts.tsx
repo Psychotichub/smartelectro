@@ -298,8 +298,13 @@ const MaintenanceAlerts: React.FC = () => {
   };
 
   const handleDeleteModel = async (modelId: string) => {
+    if (!selectedProject) {
+      setError('Please select a project first.');
+      return;
+    }
+    
     try {
-      await axios.delete(`${API_ENDPOINTS.maintenanceAlerts.getAlerts}/${modelId}`);
+      await axios.delete(`${API_ENDPOINTS.maintenanceAlerts.deleteModel}/${selectedProject}/${modelId}`);
       await fetchTrainedModels();
       setError('Model deleted successfully.');
     } catch (error: any) {

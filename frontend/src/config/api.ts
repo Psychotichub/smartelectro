@@ -19,6 +19,7 @@ export const API_ENDPOINTS = {
     uploadData: `${API_BASE_URL}/api/load-forecasting/upload-data`,
     getForecasts: `${API_BASE_URL}/api/load-forecasting/forecasts`,
     getModels: `${API_BASE_URL}/api/load-forecasting/models`,
+    deleteModel: `${API_BASE_URL}/api/load-forecasting/models`,
   },
   faultDetection: {
     trainModel: `${API_BASE_URL}/api/fault-detection/train-model`,
@@ -26,6 +27,7 @@ export const API_ENDPOINTS = {
     uploadData: `${API_BASE_URL}/api/fault-detection/upload-data`,
     getDetections: `${API_BASE_URL}/api/fault-detection/detections`,
     getModels: `${API_BASE_URL}/api/fault-detection/models`,
+    deleteModel: `${API_BASE_URL}/api/fault-detection/models`,
   },
   maintenanceAlerts: {
     analyze: `${API_BASE_URL}/api/maintenance-alerts/analyze`,
@@ -34,5 +36,6 @@ export const API_ENDPOINTS = {
     uploadSensorData: `${API_BASE_URL}/api/maintenance-alerts/upload-sensor-data`,
     anomalyDetection: `${API_BASE_URL}/api/maintenance-alerts/anomaly-detection`,
     getAlerts: `${API_BASE_URL}/api/maintenance-alerts/alerts`,
+    deleteModel: `${API_BASE_URL}/api/maintenance-alerts/models`,
   },
 }; 

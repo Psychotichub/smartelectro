@@ -381,4 +381,40 @@ async def delete_maintenance_alert(
     db.delete(alert)
     db.commit()
     
-    return {"message": "Maintenance alert deleted successfully"} 
+    return {"message": "Maintenance alert deleted successfully"}
+
+@router.delete("/models/{project_id}/{model_id}")
+async def delete_trained_model(
+    project_id: int,
+    model_id: str,
+    current_user = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Delete trained model"""
+    # Verify project exists and belongs to user
+    project = db.query(Project).filter(
+        Project.id == project_id,
+        Project.owner_id == current_user.id
+    ).first()
+    
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    # Delete model files from filesystem
+    import os
+    import glob
+    
+    models_dir = maintenance_service.models_dir
+    model_files = glob.glob(os.path.join(models_dir, f"{model_id}*"))
+    
+    if not model_files:
+        raise HTTPException(status_code=404, detail="Model not found")
+    
+    # Delete all files related to this model
+    for file_path in model_files:
+        try:
+            os.remove(file_path)
+        except Exception as e:
+            print(f"Error deleting file {file_path}: {e}")
+    
+    return {"message": "Model deleted successfully"} 

@@ -316,8 +316,13 @@ const FaultDetectionTraining: React.FC = () => {
   };
 
   const handleDeleteModel = async (modelId: string) => {
+    if (!selectedProject) {
+      setError('Please select a project first.');
+      return;
+    }
+    
     try {
-      await axios.delete(`${API_ENDPOINTS.faultDetection.getDetections}/${modelId}`);
+      await axios.delete(`${API_ENDPOINTS.faultDetection.deleteModel}/${selectedProject}/${modelId}`);
       await fetchTrainedModels();
       setError('Model deleted successfully.');
     } catch (error: any) {
