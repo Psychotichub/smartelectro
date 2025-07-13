@@ -10,6 +10,8 @@ import FaultDetectionTraining from './pages/FaultDetectionTraining';
 import FaultDetectionPrediction from './pages/FaultDetectionPrediction';
 import CableCalculator from './pages/CableCalculator';
 import MaintenanceAlerts from './pages/MaintenanceAlerts';
+import MaintenanceAlertsTraining from './pages/MaintenanceAlertsTraining';
+import MaintenanceAlertsPrediction from './pages/MaintenanceAlertsPrediction';
 import Projects from './pages/Projects';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -35,6 +37,8 @@ const App: React.FC = () => {
               <Route path="fault-detection-prediction" element={<FaultDetectionPrediction />} />
               <Route path="cable-calculator" element={<CableCalculator />} />
               <Route path="maintenance-alerts" element={<MaintenanceAlerts />} />
+              <Route path="maintenance-alerts-training" element={<MaintenanceAlertsTraining />} />
+              <Route path="maintenance-alerts-prediction" element={<MaintenanceAlertsPrediction />} />
             </Route>
           </Routes>
         </div>

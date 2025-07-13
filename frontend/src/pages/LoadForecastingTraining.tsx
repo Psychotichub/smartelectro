@@ -187,6 +187,11 @@ const LoadForecastingTraining: React.FC = () => {
       return;
     }
 
+    if (uploadedData.length === 0) {
+      setError('Please upload data or use sample data first.');
+      return;
+    }
+
     setError('');
     setTrainingProgress({
       status: 'training',
@@ -195,35 +200,29 @@ const LoadForecastingTraining: React.FC = () => {
     });
 
     try {
-      // Simulate training progress
-      const progressInterval = setInterval(() => {
-        setTrainingProgress(prev => {
-          if (prev.progress >= 100) {
-            clearInterval(progressInterval);
-            return prev;
-          }
-          
-          const newProgress = prev.progress + Math.random() * 15;
-          const progress = Math.min(newProgress, 100);
-          
-          let message = 'Initializing model training...';
-          if (progress > 20) message = 'Processing training data...';
-          if (progress > 40) message = 'Training neural network...';
-          if (progress > 60) message = 'Optimizing model parameters...';
-          if (progress > 80) message = 'Validating model performance...';
-          if (progress >= 100) message = 'Training completed successfully!';
-          
-          return {
-            ...prev,
-            progress,
-            message
-          };
-        });
-      }, 500);
+      // Prepare training data
+      const trainingData = uploadedData.map(row => ({
+        timestamp: row.timestamp,
+        load: row.load
+      }));
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 8000));
-      
+      // Update progress to show data preparation
+      setTrainingProgress(prev => ({
+        ...prev,
+        progress: 20,
+        message: 'Preparing training data...'
+      }));
+
+      // Make real API call to train model
+      const response = await axios.post(API_ENDPOINTS.loadForecasting.train, {
+        project_id: selectedProject,
+        name: `Load_Forecast_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}`,
+        model_type: selectedModel,
+        forecast_hours: forecastHorizon,
+        use_sample_data: false,
+        uploaded_data: trainingData
+      });
+
       setTrainingProgress({
         status: 'completed',
         progress: 100,
@@ -241,6 +240,8 @@ const LoadForecastingTraining: React.FC = () => {
       });
       if (error.response?.status === 401) {
         setError('Authentication failed. Please log in again.');
+      } else if (error.response?.data?.detail) {
+        setError(`Training failed: ${error.response.data.detail}`);
       } else {
         setError('Failed to train model. Please try again.');
       }
