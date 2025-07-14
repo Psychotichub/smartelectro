@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import pandas as pd
 import json
@@ -21,6 +21,7 @@ class MaintenanceAnalysisRequest(BaseModel):
     equipment_type: str
     sensor_data: Dict[str, List[float]]
     timestamps: List[str]
+    existing_model_name: Optional[str] = None  # New parameter for incremental learning
 
 class MaintenanceAlertResponse(BaseModel):
     id: int
@@ -36,6 +37,13 @@ class SensorDataRequest(BaseModel):
     equipment_type: str = "motor"
     days: int = 30
     hours_per_day: int = 24
+
+class MaintenanceAnalysisResponse(BaseModel):
+    health_score: float
+    anomaly_detection: Dict[str, Any]
+    maintenance_prediction: Dict[str, Any]
+    summary: str
+    is_incremental: Optional[bool] = None
 
 @router.post("/analyze", response_model=MaintenanceAlertResponse)
 async def analyze_equipment(
@@ -61,7 +69,7 @@ async def analyze_equipment(
         
         # Perform equipment health analysis
         analysis_result = maintenance_service.analyze_equipment_health(
-            data, request.equipment_type
+            data, request.equipment_type, request.existing_model_name
         )
         
         # Determine alert severity based on health score

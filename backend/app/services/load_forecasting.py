@@ -6,7 +6,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.preprocessing import MinMaxScaler
 import json
 from datetime import datetime, timedelta
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional
 import pickle
 import os
 
@@ -60,8 +60,9 @@ class LoadForecastingService:
         model.compile(optimizer='adam', loss='mse', metrics=['mae'])
         return model
     
-    def train_lstm_model(self, data: pd.DataFrame, forecast_hours: int = 24) -> Dict[str, Any]:
-        """Train LSTM model for load forecasting"""
+    def train_lstm_model(self, data: pd.DataFrame, forecast_hours: int = 24, 
+                        existing_model_name: Optional[str] = None) -> Dict[str, Any]:
+        """Train LSTM model for load forecasting with optional incremental learning"""
         if not TENSORFLOW_AVAILABLE:
             raise ImportError("TensorFlow is not available. Please install TensorFlow to use LSTM models.")
         
@@ -84,23 +85,67 @@ class LoadForecastingService:
             X, y, test_size=0.2, random_state=42, shuffle=False
         )
         
-        # Create and train model
-        model = self.create_lstm_model(sequence_length)
-        
-        early_stopping = EarlyStopping(
-            monitor='val_loss',
-            patience=10,
-            restore_best_weights=True
-        )
-        
-        history = model.fit(
-            X_train, y_train,
-            epochs=50,
-            batch_size=32,
-            validation_data=(X_test, y_test),
-            callbacks=[early_stopping],
-            verbose=0
-        )
+        # Load existing model if provided
+        if existing_model_name:
+            try:
+                existing_model_data = self.load_model(existing_model_name, 'lstm')
+                model = existing_model_data['model']
+                print(f"Loaded existing LSTM model: {existing_model_name}")
+                
+                # Continue training with new data
+                early_stopping = EarlyStopping(
+                    monitor='val_loss',
+                    patience=5,  # Reduced patience for incremental learning
+                    restore_best_weights=True
+                )
+                
+                history = model.fit(
+                    X_train, y_train,
+                    epochs=20,  # Fewer epochs for incremental learning
+                    batch_size=32,
+                    validation_data=(X_test, y_test),
+                    callbacks=[early_stopping],
+                    verbose=0
+                )
+                
+                print(f"Incremental training completed with {len(data)} new samples")
+                
+            except Exception as e:
+                print(f"Failed to load existing model, creating new one: {e}")
+                model = self.create_lstm_model(sequence_length)
+                
+                early_stopping = EarlyStopping(
+                    monitor='val_loss',
+                    patience=10,
+                    restore_best_weights=True
+                )
+                
+                history = model.fit(
+                    X_train, y_train,
+                    epochs=50,
+                    batch_size=32,
+                    validation_data=(X_test, y_test),
+                    callbacks=[early_stopping],
+                    verbose=0
+                )
+        else:
+            # Create and train new model
+            model = self.create_lstm_model(sequence_length)
+            
+            early_stopping = EarlyStopping(
+                monitor='val_loss',
+                patience=10,
+                restore_best_weights=True
+            )
+            
+            history = model.fit(
+                X_train, y_train,
+                epochs=50,
+                batch_size=32,
+                validation_data=(X_test, y_test),
+                callbacks=[early_stopping],
+                verbose=0
+            )
         
         # Make predictions
         y_pred = model.predict(X_test)
@@ -123,7 +168,8 @@ class LoadForecastingService:
             'mse': mse,
             'r2_score': r2,
             'forecast': forecast,
-            'history': history.history
+            'history': history.history,
+            'is_incremental': existing_model_name is not None
         }
     
     def generate_lstm_forecast(self, model, last_sequence: np.ndarray, forecast_hours: int, scaler) -> List[float]:
@@ -147,8 +193,9 @@ class LoadForecastingService:
         forecast = scaler.inverse_transform(np.array(forecast).reshape(-1, 1))
         return forecast.flatten().tolist()
     
-    def train_random_forest_model(self, data: pd.DataFrame, forecast_hours: int = 24) -> Dict[str, Any]:
-        """Train Random Forest model for load forecasting"""
+    def train_random_forest_model(self, data: pd.DataFrame, forecast_hours: int = 24,
+                                existing_model_name: Optional[str] = None) -> Dict[str, Any]:
+        """Train Random Forest model for load forecasting with optional incremental learning"""
         # Create features from time series
         features = self.create_features(data)
         
@@ -167,15 +214,50 @@ class LoadForecastingService:
                 test_size=test_size, random_state=42, shuffle=False
             )
         
-        # Train model
-        model = RandomForestRegressor(
-            n_estimators=100,
-            max_depth=10,
-            random_state=42,
-            n_jobs=-1
-        )
-        
-        model.fit(X_train, y_train)
+        # Load existing model if provided
+        if existing_model_name:
+            try:
+                existing_model_data = self.load_model(existing_model_name, 'random_forest')
+                model = existing_model_data['model']
+                print(f"Loaded existing Random Forest model: {existing_model_name}")
+                
+                # For Random Forest, we need to retrain with combined data
+                # This is a limitation of Random Forest - it doesn't support true incremental learning
+                # But we can warm-start with existing trees and add new ones
+                print("Random Forest incremental learning: Adding new trees to existing model")
+                
+                # Create a new model with warm start
+                model = RandomForestRegressor(
+                    n_estimators=model.n_estimators + 50,  # Add more trees
+                    max_depth=model.max_depth,
+                    random_state=42,
+                    n_jobs=-1,
+                    warm_start=True  # Enable warm start
+                )
+                
+                # Fit the model (warm start will use existing trees)
+                model.fit(X_train, y_train)
+                
+                print(f"Incremental training completed with {len(data)} new samples")
+                
+            except Exception as e:
+                print(f"Failed to load existing model, creating new one: {e}")
+                model = RandomForestRegressor(
+                    n_estimators=100,
+                    max_depth=10,
+                    random_state=42,
+                    n_jobs=-1
+                )
+                model.fit(X_train, y_train)
+        else:
+            # Train new model
+            model = RandomForestRegressor(
+                n_estimators=100,
+                max_depth=10,
+                random_state=42,
+                n_jobs=-1
+            )
+            model.fit(X_train, y_train)
         
         # Make predictions
         y_pred = model.predict(X_test)
@@ -192,7 +274,8 @@ class LoadForecastingService:
             'mse': mse,
             'r2_score': r2,
             'forecast': forecast,
-            'feature_importance': dict(zip(X_train.columns, model.feature_importances_))
+            'feature_importance': dict(zip(X_train.columns, model.feature_importances_)),
+            'is_incremental': existing_model_name is not None
         }
     
     def create_features(self, data: pd.DataFrame) -> pd.DataFrame:

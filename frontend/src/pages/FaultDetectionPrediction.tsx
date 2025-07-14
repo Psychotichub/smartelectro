@@ -189,13 +189,13 @@ const FaultDetectionPrediction: React.FC = () => {
   };
 
   return (
-    <div className="module-page">
-      <div className="module-header">
-        <h1>🔍 Fault Detection - Prediction</h1>
+    <div className="electric-training-container">
+      <div className="electric-header">
+        <h1>🔍 Fault Detection Prediction</h1>
         <p>Use trained AI models to classify electrical faults in real-time</p>
       </div>
 
-      <div className="module-content">
+      <div className="electric-content">
         {error && (
           <div className="error-message">
             {error}
@@ -203,7 +203,7 @@ const FaultDetectionPrediction: React.FC = () => {
         )}
 
         {/* Project Selection */}
-        <div className="project-selection">
+        <div className="electric-control-section">
           <h2>Select Project</h2>
           <select
             value={selectedProject || ''}
@@ -225,20 +225,20 @@ const FaultDetectionPrediction: React.FC = () => {
 
         {/* Available Models */}
         {selectedProject && (
-          <div className="models-section">
+          <div className="electric-control-section">
             <h3>Available Trained Models</h3>
-            {trainedModels.length === 0 ? (
-              <div className="no-models">
-                <p>No trained models found for this project.</p>
-                <p>Please train a model first in the Training page.</p>
-              </div>
-            ) : (
-              <div className="models-grid">
-                {trainedModels.map((model) => (
-                  <div 
-                    key={model.model_id} 
-                    className={`model-card ${selectedModelId === model.model_id ? 'selected' : ''}`}
-                  >
+                          {trainedModels.length === 0 ? (
+                <div className="electric-model-card electric-no-models">
+                  <p>No trained models found for this project.</p>
+                  <p>Please train a model first in the Training page.</p>
+                </div>
+              ) : (
+                <div className="electric-config-grid">
+                  {trainedModels.map((model) => (
+                    <div 
+                      key={model.model_id} 
+                      className={`electric-model-card ${selectedModelId === model.model_id ? 'electric-selected' : ''}`}
+                    >
                     <div className="model-header">
                       <h4>{model.name || `${model.model_type} Model`}</h4>
                       <span className="model-type">{model.model_type}</span>
@@ -274,7 +274,7 @@ const FaultDetectionPrediction: React.FC = () => {
 
         {/* Fault Classification Testing */}
         {selectedModelId && (
-          <div className="fault-testing">
+          <div className="electric-control-section">
             <h3>🔍 Test Fault Classification</h3>
             <div className="test-info">
               <p><strong>Selected Model:</strong> {trainedModels.find(m => m.model_id === selectedModelId)?.model_type}</p>

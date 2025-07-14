@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 import pandas as pd
 import json
 import io
 from datetime import datetime
+import numpy as np
 
 from ..models.database import get_db, FaultDetection, Project
 from ..services.fault_detection import FaultDetectionService
@@ -41,6 +42,7 @@ class TrainModelRequest(BaseModel):
     name: str
     model_type: str
     use_sample_data: bool = True
+    existing_model_name: Optional[str] = None  # New parameter for incremental learning
 
 @router.post("/train-model")
 async def train_model(
@@ -48,7 +50,7 @@ async def train_model(
     current_user = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Train fault detection model"""
+    """Train fault detection model with optional incremental learning"""
     try:
         # Verify project exists and belongs to user
         project = db.query(Project).filter(
@@ -59,11 +61,15 @@ async def train_model(
         if not project:
             raise HTTPException(status_code=404, detail="Project not found")
         
-        # Train model
+        # Train model with optional incremental learning
         if request.model_type == "decision_tree":
-            result = fault_service.train_decision_tree_model()
+            result = fault_service.train_decision_tree_model(
+                existing_model_name=request.existing_model_name
+            )
         elif request.model_type == "cnn":
-            result = fault_service.train_cnn_model()
+            result = fault_service.train_cnn_model(
+                existing_model_name=request.existing_model_name
+            )
         else:
             raise HTTPException(
                 status_code=400,
@@ -79,7 +85,8 @@ async def train_model(
             "model_name": model_name,
             "accuracy": result['accuracy'],
             "model_type": request.model_type,
-            "confusion_matrix": result['confusion_matrix']
+            "confusion_matrix": result['confusion_matrix'],
+            "is_incremental": result.get('is_incremental', False)
         }
         
     except Exception as e:
@@ -87,44 +94,53 @@ async def train_model(
 
 @router.post("/predict")
 async def predict_fault(
-    request: FaultPredictionRequest,
+    voltage_a: float,
+    voltage_b: float,
+    voltage_c: float,
+    current_a: float,
+    current_b: float,
+    current_c: float,
+    frequency: float,
+    power_factor: float,
+    model_name: str,
+    model_type: str,
     current_user = Depends(get_current_active_user)
 ):
-    """Predict fault type from voltage and current data"""
+    """Predict fault type using trained model"""
     try:
-        # Validate input data
-        if not request.voltage_data or not request.current_data:
-            raise HTTPException(
-                status_code=400,
-                detail="Both voltage_data and current_data are required"
-            )
+        # Load model
+        model_data = fault_service.load_model(model_name, model_type)
         
-        # Check if all phases are present
-        required_phases = ['A', 'B', 'C']
-        if not all(phase in request.voltage_data for phase in required_phases):
-            raise HTTPException(
-                status_code=400,
-                detail="Voltage data must contain phases A, B, C"
-            )
+        # Prepare input data
+        input_data = np.array([voltage_a, voltage_b, voltage_c, current_a, current_b, current_c, frequency, power_factor])
+        features = fault_service.prepare_features(input_data)
         
-        if not all(phase in request.current_data for phase in required_phases):
-            raise HTTPException(
-                status_code=400,
-                detail="Current data must contain phases A, B, C"
-            )
+        # Scale features
+        features_scaled = model_data['scaler'].transform(features.reshape(1, -1))
         
         # Make prediction
-        result = fault_service.predict_fault(
-            voltage_data=request.voltage_data,
-            current_data=request.current_data,
-            model_type=request.model_type
-        )
+        if model_type == 'cnn':
+            features_reshaped = features_scaled.reshape(1, features_scaled.shape[1], 1)
+            prediction = model_data['model'].predict(features_reshaped)
+            predicted_class = np.argmax(prediction[0])
+        else:
+            prediction = model_data['model'].predict(features_scaled)
+            predicted_class = prediction[0]
+        
+        # Decode prediction
+        fault_type = model_data['label_encoder'].inverse_transform([predicted_class])[0]
+        
+        # Calculate confidence
+        if model_type == 'cnn':
+            confidence = float(prediction[0][predicted_class])
+        else:
+            confidence = float(model_data['model'].predict_proba(features_scaled)[0][predicted_class])
         
         return {
-            "prediction": result['prediction'],
-            "confidence": result['confidence'],
-            "fault_types": fault_service.fault_types,
-            "features": result['features']
+            "fault_type": fault_type,
+            "confidence": confidence,
+            "model_name": model_name,
+            "model_type": model_type
         }
         
     except Exception as e:
@@ -336,7 +352,7 @@ async def get_trained_models(
     current_user = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all trained models for a project"""
+    """Get all trained fault detection models for a project"""
     # Verify project exists and belongs to user
     project = db.query(Project).filter(
         Project.id == project_id,
@@ -371,7 +387,7 @@ async def get_trained_models(
                 "accuracy": metadata.get('accuracy', 0),
                 "fault_types": metadata.get('fault_types', []),
                 "created_at": metadata.get('created_at', ''),
-                "training_time": metadata.get('training_time', 0)
+                "is_incremental": metadata.get('is_incremental', False)
             })
         except Exception as e:
             print(f"Error reading metadata file {metadata_file}: {e}")

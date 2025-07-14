@@ -22,6 +22,7 @@ class LoadForecastRequest(BaseModel):
     forecast_hours: int = 24
     use_sample_data: bool = False
     uploaded_data: Optional[List[Dict[str, Any]]] = None  # For passing uploaded data
+    existing_model_name: Optional[str] = None  # New parameter for incremental learning
 
 class LoadForecastResponse(BaseModel):
     id: int
@@ -31,6 +32,7 @@ class LoadForecastResponse(BaseModel):
     accuracy_score: float
     forecast_data: List[float]
     created_at: datetime
+    is_incremental: Optional[bool] = None
 
 class LoadDataRequest(BaseModel):
     start_date: str
@@ -113,12 +115,13 @@ async def train_model(
     current_user = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Train load forecasting model"""
+    """Train load forecasting model with optional incremental learning"""
     try:
         print(f"Train request received:")
         print(f"  Project ID: {request.project_id}")
         print(f"  Model type: {request.model_type}")
         print(f"  Use sample data: {request.use_sample_data}")
+        print(f"  Existing model: {request.existing_model_name}")
         print(f"  User ID: {current_user.id}")
         
         # Verify project exists and belongs to user
@@ -162,20 +165,32 @@ async def train_model(
                 detail="Please upload data, provide uploaded_data, or set use_sample_data=True"
             )
         
-        # Train model
+        # Train model with optional incremental learning
         print(f"Training {request.model_type} model...")
         if request.model_type == "lstm":
             try:
-                result = load_service.train_lstm_model(data, request.forecast_hours)
+                result = load_service.train_lstm_model(
+                    data, 
+                    request.forecast_hours,
+                    request.existing_model_name
+                )
                 print("LSTM training completed successfully")
             except ImportError as e:
                 print(f"LSTM not available, falling back to Random Forest: {e}")
                 # TensorFlow not available, fallback to Random Forest
-                result = load_service.train_random_forest_model(data, request.forecast_hours)
+                result = load_service.train_random_forest_model(
+                    data, 
+                    request.forecast_hours,
+                    request.existing_model_name
+                )
                 result['model_type'] = 'random_forest'  # Override model type
                 print("Random Forest training completed (fallback)")
         elif request.model_type == "random_forest":
-            result = load_service.train_random_forest_model(data, request.forecast_hours)
+            result = load_service.train_random_forest_model(
+                data, 
+                request.forecast_hours,
+                request.existing_model_name
+            )
             print("Random Forest training completed successfully")
         else:
             raise HTTPException(
@@ -213,7 +228,8 @@ async def train_model(
             model_type=actual_model_type,
             accuracy_score=db_forecast.accuracy_score,
             forecast_data=result['forecast'],
-            created_at=db_forecast.created_at
+            created_at=db_forecast.created_at,
+            is_incremental=result.get('is_incremental', False)
         )
         
     except Exception as e:
@@ -228,11 +244,12 @@ async def train_model_with_data(
     name: str,
     model_type: str,
     forecast_hours: int = 24,
+    existing_model_name: Optional[str] = None,  # New parameter
     file: UploadFile = File(...),
     current_user = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Train model with uploaded data"""
+    """Train model with uploaded data and optional incremental learning"""
     try:
         # Verify project exists and belongs to user
         project = db.query(Project).filter(
@@ -258,16 +275,28 @@ async def train_model_with_data(
         # Convert timestamp
         data['timestamp'] = pd.to_datetime(data['timestamp'])
         
-        # Train model
+        # Train model with optional incremental learning
         if model_type == "lstm":
             try:
-                result = load_service.train_lstm_model(data, forecast_hours)
+                result = load_service.train_lstm_model(
+                    data, 
+                    forecast_hours,
+                    existing_model_name
+                )
             except ImportError as e:
                 # TensorFlow not available, fallback to Random Forest
-                result = load_service.train_random_forest_model(data, forecast_hours)
+                result = load_service.train_random_forest_model(
+                    data, 
+                    forecast_hours,
+                    existing_model_name
+                )
                 result['model_type'] = 'random_forest'  # Override model type
         elif model_type == "random_forest":
-            result = load_service.train_random_forest_model(data, forecast_hours)
+            result = load_service.train_random_forest_model(
+                data, 
+                forecast_hours,
+                existing_model_name
+            )
         else:
             raise HTTPException(
                 status_code=400,
@@ -300,7 +329,8 @@ async def train_model_with_data(
             model_type=actual_model_type,
             accuracy_score=db_forecast.accuracy_score,
             forecast_data=result['forecast'],
-            created_at=db_forecast.created_at
+            created_at=db_forecast.created_at,
+            is_incremental=result.get('is_incremental', False)
         )
         
     except Exception as e:

@@ -24,7 +24,15 @@ interface LoadData {
 interface Project {
   id: number;
   name: string;
-  description: string;
+  description?: string;
+}
+
+interface ExistingModel {
+  model_id: string;
+  model_name: string;
+  model_type: string;
+  accuracy_score: number;
+  created_at: string;
 }
 
 const LoadForecastingTraining: React.FC = () => {
@@ -34,6 +42,8 @@ const LoadForecastingTraining: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState<string>('lstm');
   const [forecastHorizon, setForecastHorizon] = useState<number>(24);
   const [trainedModels, setTrainedModels] = useState<TrainingResult[]>([]);
+  const [existingModels, setExistingModels] = useState<ExistingModel[]>([]);
+  const [selectedExistingModel, setSelectedExistingModel] = useState<string>('');
   const [trainingProgress, setTrainingProgress] = useState<TrainingProgress>({
     status: 'idle',
     progress: 0,
@@ -64,6 +74,7 @@ const LoadForecastingTraining: React.FC = () => {
   useEffect(() => {
     if (selectedProject) {
       fetchTrainedModels();
+      fetchExistingModels();
     }
   }, [selectedProject]);
 
@@ -84,30 +95,29 @@ const LoadForecastingTraining: React.FC = () => {
     if (!selectedProject) return;
     
     try {
-      const response = await axios.get(`${API_ENDPOINTS.loadForecasting.getModels}/${selectedProject}`);
-      
-      // Transform the API response to match the TrainingResult interface
-      const models: TrainingResult[] = response.data.map((model: any) => ({
-        model_id: model.model_id,
+      const response = await axios.get(`${API_ENDPOINTS.loadForecasting.models}/${selectedProject}`);
+      setTrainedModels(response.data.map((model: any) => ({
         model_type: model.model_type,
         accuracy: model.accuracy_score,
-        training_time: model.training_time || 0,
-        metrics: {
-          'R² Score': model.accuracy_score,
-          'MSE': model.mse || 0
-        },
-        created_at: new Date(model.created_at).toLocaleString(),
+        training_time: 0,
+        metrics: { r2_score: model.accuracy_score, mse: model.mse || 0 },
+        model_id: model.model_id,
+        created_at: model.created_at,
         name: model.model_name
-      }));
-      
-      setTrainedModels(models);
+      })));
     } catch (error: any) {
       console.error('Error fetching trained models:', error);
-      if (error.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
-      } else {
-        setError('Failed to load trained models. Please try again.');
-      }
+    }
+  };
+
+  const fetchExistingModels = async () => {
+    if (!selectedProject) return;
+    
+    try {
+      const response = await axios.get(`${API_ENDPOINTS.loadForecasting.models}/${selectedProject}`);
+      setExistingModels(response.data);
+    } catch (error: any) {
+      console.error('Error fetching existing models:', error);
     }
   };
 
@@ -122,59 +132,55 @@ const LoadForecastingTraining: React.FC = () => {
       const response = await axios.post(API_ENDPOINTS.loadForecasting.uploadData, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
-          ...axios.defaults.headers.common,
         },
       });
       
-      // Convert the response data to LoadData format
-      const timestamps = response.data.data.timestamps;
-      const loads = response.data.data.loads;
-      
-      const loadData: LoadData[] = timestamps.map((timestamp: string, index: number) => ({
-        timestamp,
-        load: loads[index]
+      const data = response.data.data;
+      const loadData: LoadData[] = data.map((item: any) => ({
+        timestamp: item.timestamp,
+        load: item.load,
+        temperature: item.temperature,
+        humidity: item.humidity
       }));
       
       setUploadedData(loadData);
       setError('');
     } catch (error: any) {
       console.error('Error uploading data:', error);
-      if (error.response?.status === 401) {
-        setError('Authentication failed. Please log in again.');
-      } else if (error.response?.status === 400) {
-        setError(`Invalid data format: ${error.response.data.detail}`);
-      } else {
-        setError('Failed to upload data. Please try again.');
-      }
+      setError('Failed to upload data. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleUseSampleData = async () => {
-    setError('');
     setLoading(true);
+    setError('');
     
     try {
-      const response = await axios.post(API_ENDPOINTS.loadForecasting.generateSample, {
-        start_date: '2023-01-01',
-        end_date: '2023-04-01',
-        freq: '1H'
-      });
+      // Generate sample data on the frontend
+      const sampleData: LoadData[] = [];
+      const startDate = new Date('2023-01-01');
       
-      // Convert the response data to LoadData format
-      const timestamps = response.data.data.timestamps;
-      const loads = response.data.data.loads;
+      for (let i = 0; i < 24 * 30; i++) { // 30 days of hourly data
+        const timestamp = new Date(startDate.getTime() + i * 60 * 60 * 1000);
+        const hour = timestamp.getHours();
+        const dayOfWeek = timestamp.getDay();
+        
+        // Create realistic load pattern
+        let load = 1000; // Base load
+        load += 200 * Math.sin((hour - 6) * Math.PI / 12); // Daily pattern
+        load += 100 * (dayOfWeek < 5 ? 1 : 0); // Weekday/weekend pattern
+        load += Math.random() * 100 - 50; // Random noise
+        
+        sampleData.push({
+          timestamp: timestamp.toISOString(),
+          load: Math.max(load, 100) // Ensure minimum load
+        });
+      }
       
-      const loadData: LoadData[] = timestamps.map((timestamp: string, index: number) => ({
-        timestamp,
-        load: loads[index]
-      }));
-      
-      setUploadedData(loadData);
-      setError('');
+      setUploadedData(sampleData);
     } catch (error: any) {
-      console.error('Error generating sample data:', error);
       setError('Failed to generate sample data. Please try again.');
     } finally {
       setLoading(false);
@@ -213,20 +219,34 @@ const LoadForecastingTraining: React.FC = () => {
         message: 'Preparing training data...'
       }));
 
-      // Make real API call to train model
-      const response = await axios.post(API_ENDPOINTS.loadForecasting.train, {
+      // Make real API call to train model with optional incremental learning
+      const requestData: any = {
         project_id: selectedProject,
         name: `Load_Forecast_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}`,
         model_type: selectedModel,
         forecast_hours: forecastHorizon,
         use_sample_data: false,
         uploaded_data: trainingData
-      });
+      };
+
+      // Add existing model name if selected for incremental learning
+      if (selectedExistingModel) {
+        requestData.existing_model_name = selectedExistingModel;
+        setTrainingProgress(prev => ({
+          ...prev,
+          progress: 30,
+          message: 'Loading existing model for incremental learning...'
+        }));
+      }
+
+      const response = await axios.post(API_ENDPOINTS.loadForecasting.train, requestData);
 
       setTrainingProgress({
         status: 'completed',
         progress: 100,
-        message: 'Model trained successfully!'
+        message: response.data.is_incremental 
+          ? 'Model updated successfully with incremental learning!' 
+          : 'Model trained successfully!'
       });
       
       await fetchTrainedModels();
@@ -255,6 +275,7 @@ const LoadForecastingTraining: React.FC = () => {
       message: ''
     });
     setError('');
+    setSelectedExistingModel('');
   };
 
   const handleDeleteModel = async (modelId: string) => {
@@ -280,252 +301,146 @@ const LoadForecastingTraining: React.FC = () => {
   const isTrainingDisabled = !selectedProject;
 
   return (
-    <div className="module-page">
-      <div className="electric-training-container">
-        {/* Electric Header */}
-        <div className="electric-header">
-          <h1>⚡ Load Forecasting Training</h1>
-          <p>Train AI models to predict future power consumption using advanced neural networks</p>
+    <div className="electric-training-container">
+      <div className="electric-header">
+        <h1>📊 Load Forecasting Model Training</h1>
+        <p>Train AI models to predict future power consumption based on historical load data.</p>
+      </div>
+
+      <div className="electric-content">
+        <div className="electric-control-section">
+          <h2>Project Selection</h2>
+          <select
+            value={selectedProject || ''}
+            onChange={(e) => setSelectedProject(Number(e.target.value))}
+            className="form-select"
+            aria-label="Select project for model training"
+          >
+            <option value="">Select a project</option>
+            {projects.map(project => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div className="electric-content">
-          {/* Error Message */}
-          {error && (
-            <div className="error-message">
-              {error}
-            </div>
-          )}
+        <div className="electric-control-section">
+          <h2>Model Configuration</h2>
+          <ModelSelector
+            models={modelOptions}
+            selectedModel={selectedModel}
+            onModelChange={setSelectedModel}
+          />
+          
+          <ForecastHorizonSelector
+            value={forecastHorizon}
+            onChange={setForecastHorizon}
+          />
+        </div>
 
-          {/* Guidelines Section - TOP */}
-          <div className="electric-guidelines">
-            <h3>📋 Training Guidelines</h3>
-            <div className="electric-guide-lines">
-              <div className="electric-guide-line">
-                <span className="electric-step-number">1</span>
-                <span className="electric-guide-text">Select a project from the dropdown menu where you want to train your load forecasting model</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">2</span>
-                <span className="electric-guide-text">Upload your CSV data file containing timestamp and load columns, or use sample data for testing</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">3</span>
-                <span className="electric-guide-text">Ensure your CSV file has proper format: timestamp column and load column with numerical values</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">4</span>
-                <span className="electric-guide-text">Review the data preview table showing first 5 records to verify data formatting and completeness</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">5</span>
-                <span className="electric-guide-text">Choose the appropriate model type: LSTM for complex patterns or Random Forest for simpler forecasting</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">6</span>
-                <span className="electric-guide-text">Set the forecast horizon (hours) to determine how far ahead you want to predict load values</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">7</span>
-                <span className="electric-guide-text">Click "Train Model" button to start the training process with your configured settings</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">8</span>
-                <span className="electric-guide-text">Monitor training progress through the progress bar showing completion percentage and current status</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">9</span>
-                <span className="electric-guide-text">Wait for training completion - LSTM models may take longer than Random Forest models to train</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">10</span>
-                <span className="electric-guide-text">Review training results including accuracy metrics and validation performance indicators</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">11</span>
-                <span className="electric-guide-text">View your trained models in the "Trained Models" section with creation dates and accuracy scores</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">12</span>
-                <span className="electric-guide-text">Delete unwanted models using the delete button to keep your model library organized</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">13</span>
-                <span className="electric-guide-text">Navigate to the Prediction page to use your trained models for generating load forecasts</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">14</span>
-                <span className="electric-guide-text">For best results, ensure training data covers multiple load patterns and seasonal variations</span>
-              </div>
-              <div className="electric-guide-line">
-                <span className="electric-step-number">15</span>
-                <span className="electric-guide-text">Consider retraining models periodically with new data to maintain forecast accuracy over time</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Project Selection */}
-          <div className="electric-control-section">
-            <h2>Project Selection</h2>
+        <div className="electric-control-section">
+          <h2>Incremental Learning (Optional)</h2>
+          <div className="incremental-learning-section">
+            <p className="section-description">
+              Select an existing model to continue training with new data instead of creating a new model.
+            </p>
             <select
-              value={selectedProject || ''}
-              onChange={(e) => setSelectedProject(parseInt(e.target.value))}
-              disabled={loading}
-              className="electric-select"
-              aria-label="Select project for model training"
+              value={selectedExistingModel}
+              onChange={(e) => setSelectedExistingModel(e.target.value)}
+              className="form-select"
+              aria-label="Select existing model for incremental learning"
             >
-              <option value="">Choose a project...</option>
-              {projects.map((project) => (
-                <option key={project.id} value={project.id}>
-                  {project.name}
-                </option>
-              ))}
+              <option value="">Create new model</option>
+              {existingModels
+                .filter(model => model.model_type === selectedModel)
+                .map(model => (
+                  <option key={model.model_id} value={model.model_id}>
+                    {model.model_name} (Accuracy: {(model.accuracy_score * 100).toFixed(1)}%)
+                  </option>
+                ))}
             </select>
-            {!selectedProject && (
-              <p className="selection-hint">Please select a project to continue with model training.</p>
+            {selectedExistingModel && (
+              <div className="incremental-info">
+                <p>✅ Will continue training on existing model</p>
+                <p>📊 New data will be added to improve the model</p>
+                <p>⏱️ Training will be faster than creating a new model</p>
+              </div>
             )}
           </div>
+        </div>
 
-          {/* Data Upload Section */}
-          <div className="electric-control-section">
-            <h2>Data Upload</h2>
-            <div className="electric-upload-section">
-              <DataUpload
-                onFileUpload={handleFileUpload}
-                onUseSampleData={handleUseSampleData}
-                acceptedTypes=".csv"
-                sampleDataDescription="3 months of hourly power consumption data with realistic patterns"
-                isProcessing={loading}
-              />
-            </div>
-          </div>
-
-          {/* Data Preview */}
+        <div className="electric-control-section">
+          <h2>Data Preparation</h2>
+          <DataUpload
+            onFileUpload={handleFileUpload}
+            onUseSampleData={handleUseSampleData}
+            acceptedTypes=".csv"
+            sampleDataDescription="1000 load records with timestamp and power consumption data"
+            isProcessing={loading}
+          />
+          
           {uploadedData.length > 0 && (
-            <div className="electric-data-preview">
-              <h3>Data Preview ({uploadedData.length} records)</h3>
-              <table className="electric-preview-table">
-                <thead>
-                  <tr>
-                    <th>Timestamp</th>
-                    <th>Load (kW)</th>
-                    {uploadedData[0].temperature && <th>Temperature (°C)</th>}
-                    {uploadedData[0].humidity && <th>Humidity (%)</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {uploadedData.slice(0, 5).map((row, index) => (
-                    <tr key={index}>
-                      <td>{row.timestamp}</td>
-                      <td>{row.load}</td>
-                      {row.temperature && <td>{row.temperature}</td>}
-                      {row.humidity && <td>{row.humidity}</td>}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {uploadedData.length > 5 && (
-                <p className="preview-note">... and {uploadedData.length - 5} more records</p>
-              )}
+            <div className="data-summary">
+              <h3>Data Summary</h3>
+              <p>📊 Records: {uploadedData.length}</p>
+              <p>📅 Date Range: {new Date(uploadedData[0].timestamp).toLocaleDateString()} - {new Date(uploadedData[uploadedData.length - 1].timestamp).toLocaleDateString()}</p>
+              <p>⚡ Load Range: {Math.min(...uploadedData.map(d => d.load)).toFixed(1)} - {Math.max(...uploadedData.map(d => d.load)).toFixed(1)} watts</p>
             </div>
           )}
+        </div>
 
-          {/* Training Configuration */}
-          <div className="electric-control-section">
-            <h2>Training Configuration</h2>
-            <div className="electric-config-grid">
-              <div className="electric-config-card">
-                <h3>Model Selection</h3>
-                <ModelSelector
-                  models={modelOptions}
-                  selectedModel={selectedModel}
-                  onModelChange={setSelectedModel}
-                  disabled={trainingProgress.status === 'training'}
-                />
-              </div>
-              
-              <div className="electric-config-card">
-                <h3>Forecast Horizon</h3>
-                <ForecastHorizonSelector
-                  value={forecastHorizon}
-                  onChange={setForecastHorizon}
-                  disabled={trainingProgress.status === 'training'}
-                />
-              </div>
-            </div>
-            
-            {isTrainingDisabled && (
-              <div className="training-requirements">
-                <p>⚠️ Requirements for training:</p>
-                <ul>
-                  <li>Select a project</li>
-                </ul>
-                <p>💡 You can upload your own data or use generated sample data for training.</p>
+        <div className="electric-control-section">
+          <h2>Training Configuration</h2>
+          <div className="training-config-info">
+            <p><strong>Selected Model:</strong> {selectedModel}</p>
+            <p><strong>Forecast Horizon:</strong> {forecastHorizon} hours</p>
+            <p><strong>Data Size:</strong> {uploadedData.length} records</p>
+            <p><strong>Training Mode:</strong> {selectedExistingModel ? 'Incremental Learning' : 'New Model'}</p>
+            {selectedExistingModel && (
+              <div className="incremental-info">
+                <p>✅ Will continue training on existing model</p>
+                <p>📊 New data will be added to improve the model</p>
+                <p>⏱️ Training will be faster than creating a new model</p>
               </div>
             )}
           </div>
+        </div>
 
-          {/* Train Button */}
+        <div className="electric-control-section">
+          <h2>Start Training</h2>
           <button
             onClick={handleTrainModel}
-            disabled={isTrainingDisabled || trainingProgress.status === 'training'}
-            className="electric-train-button"
+            disabled={!selectedProject || uploadedData.length === 0 || trainingProgress.status === 'training'}
+            className="btn btn-primary btn-large"
           >
-            {trainingProgress.status === 'training' ? 'Training in Progress...' : 'Train Model'}
+            {selectedExistingModel ? 'Continue Training Model' : 'Train New Model'}
           </button>
-
-          {/* Training Progress */}
+          
           {trainingProgress.status !== 'idle' && (
-            <div className="electric-progress-monitor">
-              <TrainingProgressMonitor
-                progress={trainingProgress}
-                onCancel={() => {
-                  setTrainingProgress({
-                    status: 'idle',
-                    progress: 0,
-                    message: ''
-                  });
-                }}
-              />
-            </div>
-          )}
-
-          {/* Trained Models Management */}
-          {trainedModels.length > 0 && (
-            <div className="electric-control-section">
-              <h2>Trained Models</h2>
-              <div className="electric-config-grid">
-                {trainedModels.map((model) => (
-                  <div key={model.model_id} className="electric-model-card">
-                    <div className="model-header">
-                      <h4>{model.name || `${model.model_type} Model`}</h4>
-                      <span className="electric-status normal">{model.model_type}</span>
-                    </div>
-                    <div className="model-metrics">
-                      <div className="metric">
-                        <span className="metric-label">Accuracy:</span>
-                        <span className="metric-value">{(model.accuracy * 100).toFixed(1)}%</span>
-                      </div>
-                      <div className="metric">
-                        <span className="metric-label">Created:</span>
-                        <span className="metric-value">{model.created_at}</span>
-                      </div>
-                    </div>
-                    <div className="model-actions">
-                      <button
-                        onClick={() => model.model_id && handleDeleteModel(model.model_id)}
-                        className="delete-btn"
-                        title="Delete model"
-                        disabled={!model.model_id}
-                      >
-                        🗑️ Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <button
+              onClick={handleResetTraining}
+              className="btn btn-secondary btn-reset"
+            >
+              Reset
+            </button>
           )}
         </div>
+
+        {error && (
+          <div className="error-message">
+            <p>❌ {error}</p>
+          </div>
+        )}
+
+        <TrainingProgressMonitor progress={trainingProgress} />
+
+        {trainedModels.length > 0 && (
+          <div className="electric-control-section">
+            <h2>Trained Models</h2>
+            <TrainingResults results={trainedModels} />
+          </div>
+        )}
       </div>
     </div>
   );
